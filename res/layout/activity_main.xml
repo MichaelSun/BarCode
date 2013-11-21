@@ -16,6 +16,8 @@
         android:layout_height="wrap_content"
         android:alpha="0.8"
         android:background="#CCCCCC"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
         android:visibility="gone" >
 
         <RelativeLayout
@@ -61,7 +63,6 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentLeft="true"
                 android:layout_centerVertical="true"
-                android:layout_marginLeft="5dp"
                 android:layout_marginRight="5dp"
                 android:text="形态" />
 
@@ -81,6 +82,58 @@
                 android:layout_centerVertical="true"
                 android:layout_toLeftOf="@id/shape_reset_bt"
                 android:layout_toRightOf="@id/shape_label_tv" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/ec_level_rl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/shape_rl" >
+
+            <TextView
+                android:id="@+id/ec_level_label_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:layout_centerVertical="true"
+                android:text="容错率" />
+
+            <RadioGroup
+                android:id="@+id/ec_level_rg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_toRightOf="@id/ec_level_label_tv"
+                android:orientation="horizontal" >
+
+                <RadioButton
+                    android:id="@+id/ec_level_1_rb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:checked="true"
+                    android:text="L" />
+
+                <RadioButton
+                    android:id="@+id/ec_level_2_rb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="M" />
+
+                <RadioButton
+                    android:id="@+id/ec_level_3_rb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="Q" />
+
+                <RadioButton
+                    android:id="@+id/ec_level_4_rb"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="H" />
+            </RadioGroup>
         </RelativeLayout>
     </RelativeLayout>
 

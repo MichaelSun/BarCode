@@ -41,7 +41,7 @@ public class QrcodeUtil {
 	private static final int QUIET_ZONE_SIZE = 4;
 
 	public static Bitmap encode(String contents, int width, int height,
-			int padding, Shape shape, float radiusPercent)
+			int padding, Shape shape, float radiusPercent, ErrorCorrectionLevel level)
 			throws WriterException {
 		if (TextUtils.isEmpty(contents)) {
 			throw new IllegalArgumentException("Found empty contents");
@@ -56,7 +56,7 @@ public class QrcodeUtil {
 		Hashtable<EncodeHintType, Object> table = new Hashtable<EncodeHintType, Object>();
 		// table.put(EncodeHintType.CHARACTER_SET, "UTF-8");
 
-		QRCode code = Encoder.encode(contents, ErrorCorrectionLevel.L, table);
+		QRCode code = Encoder.encode(contents, level, table);
 		return renderResult(code, width, height, padding < 0 ? QUIET_ZONE_SIZE
 				: padding, shape, radiusPercent);
 	}

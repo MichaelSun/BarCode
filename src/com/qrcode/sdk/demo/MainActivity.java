@@ -19,15 +19,18 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RadioGroup;
+import android.widget.RadioGroup.OnCheckedChangeListener;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 
 import com.google.zxing.WriterException;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.qrcode.sdk.demo.QrcodeUtil.Shape;
 
 public class MainActivity extends Activity implements OnSeekBarChangeListener,
-		OnClickListener {
+		OnClickListener, OnCheckedChangeListener {
 	private static String CONTENT = "MECARD:N:Ting Sun;Email:ting.sun@dajie-inc.com;Address:Beijing Chaoyang;Phone:18612560621;;";
 	private static int SEEKBAR_MAX = 1000;
 
@@ -38,6 +41,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	EditText mContentEt;
 	Button mGenerateBT;
 	Button mClearContentBt;
+
+	RadioGroup mEcLevelRg;
 
 	Handler mHandler = new Handler();
 
@@ -57,6 +62,7 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mContentEt = (EditText) findViewById(R.id.content_et);
 		mGenerateBT = (Button) findViewById(R.id.generate_bt);
 		mClearContentBt = (Button) findViewById(R.id.clear_content_bt);
+		mEcLevelRg = (RadioGroup) findViewById(R.id.ec_level_rg);
 
 		mShapeBar.setOnSeekBarChangeListener(this);
 		mResetShapeBt.setOnClickListener(this);
@@ -64,8 +70,11 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mShapeBar.setProgress(SEEKBAR_MAX / 2);
 		mClearContentBt.setOnClickListener(this);
 		mGenerateBT.setOnClickListener(this);
+		mEcLevelRg.setOnCheckedChangeListener(this);
 
 		mContentEt.setText(CONTENT);
+
+		System.out.println(mEcLevelRg.getCheckedRadioButtonId());
 
 		postChange();
 		// ParsedResult result =
@@ -149,6 +158,7 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 					int progress = mShapeBar.getProgress();
 					String content = mContentEt.getText().toString();
 					Shape shape = Shape.NORMAL;
+					ErrorCorrectionLevel level = MainActivity.this.getEcLevel();
 					if (progress < SEEKBAR_MAX / 2) {
 						shape = Shape.WATER;
 					} else if (progress > SEEKBAR_MAX / 2) {
@@ -162,13 +172,40 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 					}
 					Bitmap bitmap = QrcodeUtil.encode(
 							TextUtils.isEmpty(content) ? CONTENT : content,
-							width, width, -1, shape, radiusPercent);
+							width, width, -1, shape, radiusPercent, level);
 					mQrcodeImageView.setImageBitmap(bitmap);
 				} catch (WriterException e) {
 					e.printStackTrace();
 				}
 			}
 		}, 1000);
+	}
+
+	@Override
+	public void onCheckedChanged(RadioGroup group, int checkedId) {
+		postChange();
+	}
+
+	private ErrorCorrectionLevel getEcLevel() {
+		ErrorCorrectionLevel level = ErrorCorrectionLevel.L;
+		int checkedId = mEcLevelRg.getCheckedRadioButtonId();
+		switch (checkedId) {
+		case R.id.ec_level_2_rb:
+			level = ErrorCorrectionLevel.M;
+			break;
+		case R.id.ec_level_3_rb:
+			level = ErrorCorrectionLevel.Q;
+			break;
+		case R.id.ec_level_4_rb:
+			level = ErrorCorrectionLevel.H;
+			break;
+		case R.id.ec_level_1_rb:
+			break;
+		default:
+			break;
+		}
+
+		return level;
 	}
 
 }
