@@ -47,7 +47,7 @@ import com.qrcode.sdk.demo.QrcodeUtil.Shape;
 public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		OnClickListener, OnCheckedChangeListener,
 		ColorPickerDialog.OnColorChangedListener, View.OnLongClickListener {
-	private static String CONTENT = "MECARD:N:Ting Sun;Email:ting.sun@dajie-inc.com;Address:Beijing Chaoyang;Phone:18612560621;;";
+	private static String CONTENT = "MECARD:N:Ting Sun;EMAIL:ting.sun@dajie-inc.com;ADR:Beijing Chaoyang;TEL:18612560621;;";
 	private static int SEEKBAR_MAX = 1000;
 
 	private static final int COLOR_TYPE_FOREGROUND = 0x001;
