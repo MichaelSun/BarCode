@@ -41,7 +41,8 @@ public class QrcodeUtil {
 	private static final int QUIET_ZONE_SIZE = 4;
 
 	public static Bitmap encode(String contents, int width, int height,
-			int padding, Shape shape, float radiusPercent, ErrorCorrectionLevel level)
+			int padding, Shape shape, float radiusPercent,
+			ErrorCorrectionLevel level, int foregroundColor, int backgroundColor)
 			throws WriterException {
 		if (TextUtils.isEmpty(contents)) {
 			throw new IllegalArgumentException("Found empty contents");
@@ -58,11 +59,13 @@ public class QrcodeUtil {
 
 		QRCode code = Encoder.encode(contents, level, table);
 		return renderResult(code, width, height, padding < 0 ? QUIET_ZONE_SIZE
-				: padding, shape, radiusPercent);
+				: padding, shape, radiusPercent, foregroundColor,
+				backgroundColor);
 	}
 
 	private static Bitmap renderResult(QRCode code, int width, int height,
-			int quietZone, Shape shape, float radiusPercent) {
+			int quietZone, Shape shape, float radiusPercent,
+			int foregroundColor, int backgroundColor) {
 		ByteMatrix input = code.getMatrix();
 		if (input == null) {
 			throw new IllegalStateException();
@@ -82,10 +85,10 @@ public class QrcodeUtil {
 				Config.ARGB_8888);
 		bitmap.eraseColor(255);
 		Canvas canvas = new Canvas(bitmap);
-		canvas.drawColor(Color.WHITE);
+		canvas.drawColor(backgroundColor);
 		Paint paint = new Paint();
 		paint.setAntiAlias(true);
-		paint.setColor(Color.BLACK);
+		paint.setColor(foregroundColor);
 		paint.setStyle(Style.FILL);
 
 		int roundRadius = (int) (multiple * radiusPercent);

@@ -5,12 +5,25 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Locale;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.media.ExifInterface;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.provider.MediaStore;
+import android.provider.MediaStore.Images;
+import android.provider.MediaStore.Images.ImageColumns;
+import android.provider.MediaStore.MediaColumns;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,15 +37,21 @@ import android.widget.RadioGroup.OnCheckedChangeListener;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.Toast;
 
 import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.qrcode.sdk.demo.QrcodeUtil.Shape;
 
+@SuppressLint("DefaultLocale")
 public class MainActivity extends Activity implements OnSeekBarChangeListener,
-		OnClickListener, OnCheckedChangeListener {
+		OnClickListener, OnCheckedChangeListener,
+		ColorPickerDialog.OnColorChangedListener, View.OnLongClickListener {
 	private static String CONTENT = "MECARD:N:Ting Sun;Email:ting.sun@dajie-inc.com;Address:Beijing Chaoyang;Phone:18612560621;;";
 	private static int SEEKBAR_MAX = 1000;
+
+	private static final int COLOR_TYPE_FOREGROUND = 0x001;
+	private static final int COLOR_TYPE_BACKGROUND = 0x002;
 
 	ImageView mQrcodeImageView;
 	RelativeLayout mSettingPanel;
@@ -41,12 +60,16 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	EditText mContentEt;
 	Button mGenerateBT;
 	Button mClearContentBt;
-
 	RadioGroup mEcLevelRg;
+	Button mForegroundColorChooseBt;
+	Button mBackgroundColorChooseBt;
+	Button mResetColorBt;
 
 	Handler mHandler = new Handler();
 
 	int width;
+	int mForegroundColor = Color.BLACK;
+	int mBackgroundColor = Color.WHITE;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +86,9 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mGenerateBT = (Button) findViewById(R.id.generate_bt);
 		mClearContentBt = (Button) findViewById(R.id.clear_content_bt);
 		mEcLevelRg = (RadioGroup) findViewById(R.id.ec_level_rg);
+		mForegroundColorChooseBt = (Button) findViewById(R.id.foreground_color_choose_bt);
+		mBackgroundColorChooseBt = (Button) findViewById(R.id.background_color_choose_bt);
+		mResetColorBt = (Button) findViewById(R.id.color_reset_bt);
 
 		mShapeBar.setOnSeekBarChangeListener(this);
 		mResetShapeBt.setOnClickListener(this);
@@ -71,15 +97,19 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mClearContentBt.setOnClickListener(this);
 		mGenerateBT.setOnClickListener(this);
 		mEcLevelRg.setOnCheckedChangeListener(this);
+		mForegroundColorChooseBt.setOnClickListener(this);
+		mBackgroundColorChooseBt.setOnClickListener(this);
+		mQrcodeImageView.setClickable(true);
+		mQrcodeImageView.setOnClickListener(this);
+		mQrcodeImageView.setOnLongClickListener(this);
+		mResetColorBt.setOnClickListener(this);
+
+		mForegroundColorChooseBt.setBackgroundColor(mForegroundColor);
+		mBackgroundColorChooseBt.setBackgroundColor(mBackgroundColor);
 
 		mContentEt.setText(CONTENT);
 
-		System.out.println(mEcLevelRg.getCheckedRadioButtonId());
-
 		postChange();
-		// ParsedResult result =
-		// QrcodeUtil.decode(BitmapFactory.decodeFile("/sdcard/test/1.jpg"));
-		// System.out.println(result == null);
 	}
 
 	@Override
@@ -145,6 +175,27 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			break;
 		case R.id.clear_content_bt:
 			mContentEt.setText("");
+			break;
+		case R.id.foreground_color_choose_bt:
+			new ColorPickerDialog(this, this, mForegroundColor,
+					COLOR_TYPE_FOREGROUND).show();
+			break;
+		case R.id.background_color_choose_bt:
+			new ColorPickerDialog(this, this, mBackgroundColor,
+					COLOR_TYPE_BACKGROUND).show();
+			break;
+		case R.id.qrcode_img_iv:
+			mSettingPanel
+					.setVisibility(mSettingPanel.getVisibility() == View.GONE ? View.VISIBLE
+							: View.GONE);
+			break;
+		case R.id.color_reset_bt:
+			mForegroundColor = Color.BLACK;
+			mBackgroundColor = Color.WHITE;
+			mForegroundColorChooseBt.setBackgroundColor(mForegroundColor);
+			mBackgroundColorChooseBt.setBackgroundColor(mBackgroundColor);
+			postChange();
+			break;
 		default:
 			break;
 		}
@@ -157,6 +208,10 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 				try {
 					int progress = mShapeBar.getProgress();
 					String content = mContentEt.getText().toString();
+					if (TextUtils.isEmpty(content)) {
+						mContentEt.setText(CONTENT);
+						content = CONTENT;
+					}
 					Shape shape = Shape.NORMAL;
 					ErrorCorrectionLevel level = MainActivity.this.getEcLevel();
 					if (progress < SEEKBAR_MAX / 2) {
@@ -170,9 +225,9 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 						// 液化半径上限为0.7
 						radiusPercent *= 0.7;
 					}
-					Bitmap bitmap = QrcodeUtil.encode(
-							TextUtils.isEmpty(content) ? CONTENT : content,
-							width, width, -1, shape, radiusPercent, level);
+					Bitmap bitmap = QrcodeUtil.encode(content, width, width,
+							-1, shape, radiusPercent, level, mForegroundColor,
+							mBackgroundColor);
 					mQrcodeImageView.setImageBitmap(bitmap);
 				} catch (WriterException e) {
 					e.printStackTrace();
@@ -206,6 +261,123 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		}
 
 		return level;
+	}
+
+	@Override
+	public void colorChanged(int color, int type) {
+		switch (type) {
+		case COLOR_TYPE_FOREGROUND:
+			mForegroundColor = color;
+			mForegroundColorChooseBt.setBackgroundColor(color);
+			break;
+		case COLOR_TYPE_BACKGROUND:
+			mBackgroundColor = color;
+			mBackgroundColorChooseBt.setBackgroundColor(color);
+		default:
+			break;
+		}
+
+		postChange();
+	}
+
+	@Override
+	public boolean onLongClick(View v) {
+		switch (v.getId()) {
+		case R.id.qrcode_img_iv:
+			BitmapDrawable drawable = (BitmapDrawable) mQrcodeImageView
+					.getDrawable();
+			if (drawable != null) {
+				Bitmap bitmap = drawable.getBitmap();
+				if (bitmap != null) {
+					Thread thread = new Thread(new SaveRunnable(bitmap));
+					thread.setPriority(Thread.MAX_PRIORITY);
+					thread.start();
+				}
+			}
+
+			break;
+		default:
+			break;
+		}
+		return true;
+	}
+
+	private final class SaveRunnable implements Runnable {
+		Bitmap mBitmap;
+
+		public SaveRunnable(Bitmap bitmap) {
+			mBitmap = bitmap;
+		}
+
+		@Override
+		public void run() {
+			if (mBitmap == null) {
+				return;
+			}
+
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTimeInMillis(System.currentTimeMillis());
+
+			String pictureName = String.format(
+					"Qrcode_%d%02d%02d_%02d%02d%02d",
+					calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH)
+							+ (1 - Calendar.JANUARY),
+					calendar.get(Calendar.DATE),
+					calendar.get(Calendar.HOUR_OF_DAY),
+					calendar.get(Calendar.MINUTE),
+					calendar.get(Calendar.SECOND));
+
+			File filePath = Environment
+					.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+			filePath = new File(filePath, "/Qrcode/");
+			filePath.mkdirs();
+			filePath = new File(filePath, pictureName + ".jpeg");
+
+			try {
+				filePath.createNewFile();
+				FileOutputStream fos = new FileOutputStream(filePath);
+				mBitmap.compress(CompressFormat.JPEG, 100, fos);
+				fos.close();
+
+				ExifInterface exif = new ExifInterface(
+						filePath.getAbsolutePath());
+				exif.setAttribute(ExifInterface.TAG_ORIENTATION,
+						Integer.toString(ExifInterface.ORIENTATION_NORMAL));
+				exif.saveAttributes();
+
+				ContentValues v = new ContentValues();
+				v.put(MediaColumns.TITLE, pictureName);
+				v.put(MediaColumns.DISPLAY_NAME, pictureName);
+				v.put(ImageColumns.DESCRIPTION, "Save as qrcode.");
+				v.put(MediaColumns.DATE_ADDED, calendar.getTimeInMillis());
+				v.put(ImageColumns.DATE_TAKEN, calendar.getTimeInMillis());
+				v.put(MediaColumns.DATE_MODIFIED, calendar.getTimeInMillis());
+				v.put(MediaColumns.MIME_TYPE, "image/jpeg");
+				v.put(ImageColumns.ORIENTATION, 0);
+				v.put(MediaColumns.DATA, filePath.getAbsolutePath());
+
+				File parent = filePath.getParentFile();
+				String path = parent.toString().toLowerCase(Locale.ENGLISH);
+				String name = parent.getName().toLowerCase(Locale.ENGLISH);
+				v.put(Images.ImageColumns.BUCKET_ID, path.hashCode());
+				v.put(Images.ImageColumns.BUCKET_DISPLAY_NAME, name);
+				v.put(MediaColumns.SIZE, filePath.length());
+
+				ContentResolver c = getContentResolver();
+				c.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
+			} catch (FileNotFoundException e) {
+			} catch (IOException e) {
+			}
+
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					Toast.makeText(MainActivity.this, "save success!",
+							Toast.LENGTH_SHORT).show();
+				}
+			});
+		}
+
 	}
 
 }

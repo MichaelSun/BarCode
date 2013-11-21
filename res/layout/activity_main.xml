@@ -135,6 +135,56 @@
                     android:text="H" />
             </RadioGroup>
         </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/color_rl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/ec_level_rl" >
+
+            <TextView
+                android:id="@+id/foreground_color_label_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:text="Foreground" />
+
+            <Button
+                android:id="@+id/foreground_color_choose_bt"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="15dp"
+                android:layout_toRightOf="@id/foreground_color_label_tv"
+                android:background="#000000" />
+
+            <TextView
+                android:id="@+id/background_color_label_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="15dp"
+                android:layout_toRightOf="@id/foreground_color_choose_bt"
+                android:text="Background" />
+
+            <Button
+                android:id="@+id/background_color_choose_bt"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="15dp"
+                android:layout_toRightOf="@id/background_color_label_tv"
+                android:background="#FFFFFF" />
+
+            <Button
+                android:id="@+id/color_reset_bt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="10dp"
+                android:text="reset" />
+        </RelativeLayout>
     </RelativeLayout>
 
 </RelativeLayout>
