@@ -47,8 +47,8 @@ public class QrcodeUtil {
 	public static Bitmap encode(String contents, int width, int height,
 			int padding, Shape shape, float radiusPercent,
 			ErrorCorrectionLevel level, int foregroundColor,
-			int backgroundColor, int gradientColor, GRADIENT_TYPE gradientType)
-			throws WriterException {
+			int backgroundColor, int finderColor, int gradientColor,
+			GRADIENT_TYPE gradientType) throws WriterException {
 		if (TextUtils.isEmpty(contents)) {
 			throw new IllegalArgumentException("Found empty contents");
 		}
@@ -65,13 +65,13 @@ public class QrcodeUtil {
 		QRCode code = Encoder.encode(contents, level, table);
 		return renderResult(code, width, height, padding < 0 ? QUIET_ZONE_SIZE
 				: padding, shape, radiusPercent, foregroundColor,
-				backgroundColor, gradientColor, gradientType);
+				backgroundColor, finderColor, gradientColor, gradientType);
 	}
 
 	private static Bitmap renderResult(QRCode code, int width, int height,
 			int quietZone, Shape shape, float radiusPercent,
-			int foregroundColor, int backgroundColor, int gradientColor,
-			GRADIENT_TYPE gradientType) {
+			int foregroundColor, int backgroundColor, int finderColor,
+			int gradientColor, GRADIENT_TYPE gradientType) {
 		ByteMatrix input = code.getMatrix();
 		if (input == null) {
 			throw new IllegalStateException();
@@ -94,35 +94,42 @@ public class QrcodeUtil {
 		canvas.drawColor(backgroundColor);
 		Paint paint = new Paint();
 		paint.setAntiAlias(true);
-		paint.setColor(foregroundColor);
 		paint.setStyle(Style.FILL);
 
 		int roundRadius = (int) (multiple * radiusPercent);
 
 		for (int inputY = 0, outputY = topPadding; inputY < inputHeight; inputY++, outputY += multiple) {
 			for (int inputX = 0, outputX = leftPadding; inputX < inputWidth; inputX++, outputX += multiple) {
-				// 渐变色
-				if (gradientColor != foregroundColor) {
-					float radio = 0f;
-					if (gradientType == GRADIENT_TYPE.HORIZONTAL) {
-						radio = inputX * 1.0f / inputWidth;
-					} else if (gradientType == GRADIENT_TYPE.VERTICAL) {
-						radio = inputY * 1.0f / inputHeight;
-					} else if (gradientType == GRADIENT_TYPE.SLASH) {
-						radio = (float) (Math.hypot(inputWidth - inputX,
-								inputHeight - inputY) / Math.hypot(inputWidth,
-								inputHeight));
-					} else if (gradientType == GRADIENT_TYPE.BACKSLASH) {
-						radio = (float) (Math.hypot(inputX, inputHeight
-								- inputY) / Math.hypot(inputWidth, inputHeight));
+				// FinderPatterns
+				if (isFinderPatterns(inputX, inputY, inputWidth, inputHeight)) {
+					paint.setColor(finderColor);
+				} else {
+					if (gradientColor != foregroundColor) {
+						// 渐变色
+						float radio = 0f;
+						if (gradientType == GRADIENT_TYPE.HORIZONTAL) {
+							radio = inputX * 1.0f / inputWidth;
+						} else if (gradientType == GRADIENT_TYPE.VERTICAL) {
+							radio = inputY * 1.0f / inputHeight;
+						} else if (gradientType == GRADIENT_TYPE.SLASH) {
+							radio = (float) (Math.hypot(inputWidth - inputX,
+									inputHeight - inputY) / Math.hypot(
+									inputWidth, inputHeight));
+						} else if (gradientType == GRADIENT_TYPE.BACKSLASH) {
+							radio = (float) (Math.hypot(inputX, inputHeight
+									- inputY) / Math.hypot(inputWidth,
+									inputHeight));
+						} else {
+							radio = (float) (Math.hypot(inputWidth / 2.0
+									- inputX, inputHeight / 2.0 - inputY) / (Math
+									.min(inputWidth, inputHeight) / 2.0));
+						}
+						int color = getGradientColor(gradientColor,
+								foregroundColor, radio);
+						paint.setColor(color);
 					} else {
-						radio = (float) (Math.hypot(inputWidth / 2.0 - inputX,
-								inputHeight / 2.0 - inputY) / (Math.min(
-								inputWidth, inputHeight) / 2.0));
+						paint.setColor(foregroundColor);
 					}
-					int color = getGradientColor(gradientColor,
-							foregroundColor, radio);
-					paint.setColor(color);
 				}
 
 				if (input.get(inputX, inputY) == 1) {
@@ -320,5 +327,15 @@ public class QrcodeUtil {
 		int b3 = (int) (b1 + (b2 - b1) * radio);
 
 		return Color.argb(a3, r3, g3, b3);
+	}
+
+	private static boolean isFinderPatterns(int x, int y, int width, int height) {
+		if (x >= 0 && x <= 6 && y >= 0 && y <= 6)
+			return true;
+		if (x >= 0 && x <= 6 && y >= height - 7 && y <= height - 1)
+			return true;
+		if (y >= 0 && y <= 6 && x >= width - 7 && x <= width - 1)
+			return true;
+		return false;
 	}
 }
