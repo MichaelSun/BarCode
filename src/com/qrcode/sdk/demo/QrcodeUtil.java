@@ -11,6 +11,7 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Path;
 import android.graphics.Path.Direction;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.text.TextUtils;
 
@@ -47,8 +48,9 @@ public class QrcodeUtil {
 	public static Bitmap encode(String contents, int width, int height,
 			int padding, Shape shape, float radiusPercent,
 			ErrorCorrectionLevel level, int foregroundColor,
-			int backgroundColor, int finderColor, int gradientColor,
-			GRADIENT_TYPE gradientType) throws WriterException {
+			int backgroundColor, Bitmap backgroundBm, int finderColor,
+			int gradientColor, GRADIENT_TYPE gradientType)
+			throws WriterException {
 		if (TextUtils.isEmpty(contents)) {
 			throw new IllegalArgumentException("Found empty contents");
 		}
@@ -65,13 +67,14 @@ public class QrcodeUtil {
 		QRCode code = Encoder.encode(contents, level, table);
 		return renderResult(code, width, height, padding < 0 ? QUIET_ZONE_SIZE
 				: padding, shape, radiusPercent, foregroundColor,
-				backgroundColor, finderColor, gradientColor, gradientType);
+				backgroundColor, backgroundBm, finderColor, gradientColor,
+				gradientType);
 	}
 
 	private static Bitmap renderResult(QRCode code, int width, int height,
 			int quietZone, Shape shape, float radiusPercent,
-			int foregroundColor, int backgroundColor, int finderColor,
-			int gradientColor, GRADIENT_TYPE gradientType) {
+			int foregroundColor, int backgroundColor, Bitmap backgroundBm,
+			int finderColor, int gradientColor, GRADIENT_TYPE gradientType) {
 		ByteMatrix input = code.getMatrix();
 		if (input == null) {
 			throw new IllegalStateException();
@@ -91,10 +94,17 @@ public class QrcodeUtil {
 				Config.ARGB_8888);
 		bitmap.eraseColor(255);
 		Canvas canvas = new Canvas(bitmap);
-		canvas.drawColor(backgroundColor);
 		Paint paint = new Paint();
 		paint.setAntiAlias(true);
 		paint.setStyle(Style.FILL);
+		
+		if (backgroundBm != null) {
+			Rect src = new Rect(0, 0, backgroundBm.getWidth(), backgroundBm.getHeight());
+			Rect dst = new Rect(0, 0, outputWidth, outputHeight);
+			canvas.drawBitmap(backgroundBm, src, dst, paint);
+		} else {
+			canvas.drawColor(backgroundColor);
+		}
 
 		int roundRadius = (int) (multiple * radiusPercent);
 

@@ -12,11 +12,15 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.ExifInterface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -60,6 +64,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	private static final int COLOR_TYPE_GRADIENT = 0x003;
 	private static final int COLOR_TYPE_FINDER = 0x004;
 
+	private static final int REQUEST_LOAD_IMAGE = 1;
+
 	ImageView mQrcodeImageView;
 	RelativeLayout mSettingPanel;
 	SeekBar mShapeBar;
@@ -71,6 +77,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	Button mForegroundColorChooseBt;
 	Button mBackgroundColorChooseBt;
 	Button mResetColorBt;
+	Button mBackgroundImageChooseBt;
+	Button mBackgroundImageResetBt;
 	Button mGradientColorChooseBt;
 	Button mResetGradientColorBt;
 	Spinner mGradientTypeSpinner;
@@ -82,6 +90,7 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	int width;
 	int mForegroundColor = Color.BLACK;
 	int mBackgroundColor = Color.WHITE;
+	Bitmap mBackgroundBm = null;
 	int mGradientColor = Color.BLACK;
 	GRADIENT_TYPE mGadientType = GRADIENT_TYPE.ROUND;
 	int mFinderColor = Color.BLACK;
@@ -104,6 +113,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mForegroundColorChooseBt = (Button) findViewById(R.id.foreground_color_choose_bt);
 		mBackgroundColorChooseBt = (Button) findViewById(R.id.background_color_choose_bt);
 		mResetColorBt = (Button) findViewById(R.id.color_reset_bt);
+		mBackgroundImageChooseBt = (Button) findViewById(R.id.background_image_choose_bt);
+		mBackgroundImageResetBt = (Button) findViewById(R.id.background_image_reset_bt);
 		mGradientColorChooseBt = (Button) findViewById(R.id.gradient_color_choose_bt);
 		mResetGradientColorBt = (Button) findViewById(R.id.gradient_color_reset_bt);
 		initGradientSpinner();
@@ -123,6 +134,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mQrcodeImageView.setOnClickListener(this);
 		mQrcodeImageView.setOnLongClickListener(this);
 		mResetColorBt.setOnClickListener(this);
+		mBackgroundImageChooseBt.setOnClickListener(this);
+		mBackgroundImageResetBt.setOnClickListener(this);
 		mGradientColorChooseBt.setOnClickListener(this);
 		mResetGradientColorBt.setOnClickListener(this);
 		mFinderColorChooseBt.setOnClickListener(this);
@@ -263,6 +276,16 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			mBackgroundColorChooseBt.setBackgroundColor(mBackgroundColor);
 			postChange();
 			break;
+		case R.id.background_image_choose_bt:
+			selectPhoto();
+			break;
+		case R.id.background_image_reset_bt:
+			if (mBackgroundBm != null && !mBackgroundBm.isRecycled()) {
+				mBackgroundBm.recycle();
+			}
+			mBackgroundBm = null;
+			postChange();
+			break;
 		case R.id.gradient_color_choose_bt:
 			new ColorPickerDialog(this, this, mGradientColor,
 					COLOR_TYPE_GRADIENT).show();
@@ -278,7 +301,7 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			break;
 		case R.id.finder_color_reset_bt:
 			mFinderColor = mForegroundColor;
-			mGradientColorChooseBt.setBackgroundColor(mFinderColor);
+			mFinderColorChooseBt.setBackgroundColor(mFinderColor);
 			postChange();
 		default:
 			break;
@@ -311,8 +334,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 					}
 					Bitmap bitmap = QrcodeUtil.encode(content, width, width,
 							-1, shape, radiusPercent, level, mForegroundColor,
-							mBackgroundColor, mFinderColor, mGradientColor,
-							mGadientType);
+							mBackgroundColor, mBackgroundBm, mFinderColor,
+							mGradientColor, mGadientType);
 					mQrcodeImageView.setImageBitmap(bitmap);
 				} catch (WriterException e) {
 					e.printStackTrace();
@@ -472,6 +495,60 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			});
 		}
 
+	}
+
+	private void selectPhoto() {
+		Intent i = new Intent(Intent.ACTION_PICK,
+				android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+		startActivityForResult(i, REQUEST_LOAD_IMAGE);
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if (requestCode == REQUEST_LOAD_IMAGE && resultCode == RESULT_OK
+				&& data != null) {
+			Uri selectedImage = data.getData();
+			String[] filePathColumn = { MediaStore.Images.Media.DATA };
+			Cursor cursor = getContentResolver().query(selectedImage,
+					filePathColumn, null, null, null);
+			cursor.moveToFirst();
+			int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+			String picturePath = cursor.getString(columnIndex);
+			cursor.close();
+
+			if (mBackgroundBm != null && !mBackgroundBm.isRecycled()) {
+				mBackgroundBm.recycle();
+				mBackgroundBm = null;
+			}
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			options.inJustDecodeBounds = true;
+			BitmapFactory.decodeFile(picturePath, options);
+			options.inSampleSize = computeSampleSize(options,
+					mQrcodeImageView.getWidth());
+			options.inJustDecodeBounds = false;
+			mBackgroundBm = BitmapFactory.decodeFile(picturePath, options);
+			postChange();
+		}
+	}
+
+	private int computeSampleSize(BitmapFactory.Options options, int target) {
+		int w = options.outWidth;
+		int h = options.outHeight;
+		int candidateW = w / target;
+		int candidateH = h / target;
+		int candidate = Math.max(candidateW, candidateH);
+		if (candidate == 0)
+			return 1;
+		if (candidate > 1) {
+			if ((w > target) && (w / candidate) < target)
+				candidate -= 1;
+		}
+		if (candidate > 1) {
+			if ((h > target) && (h / candidate) < target)
+				candidate -= 1;
+		}
+		return candidate;
 	}
 
 }
