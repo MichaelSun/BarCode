@@ -30,6 +30,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -38,11 +41,13 @@ import android.widget.RadioGroup.OnCheckedChangeListener;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.zxing.WriterException;
 import com.google.zxing.client.result.ParsedResult;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.qrcode.sdk.demo.QrcodeUtil.GRADIENT_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.Shape;
 
 @SuppressLint("DefaultLocale")
@@ -57,6 +62,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 
 	private static final int COLOR_TYPE_FOREGROUND = 0x001;
 	private static final int COLOR_TYPE_BACKGROUND = 0x002;
+	private static final int COLOR_TYPE_GRADIENT = 0x003;
+	private static final int COLOR_TYPE_FINDER = 0x004;
 
 	ImageView mQrcodeImageView;
 	RelativeLayout mSettingPanel;
@@ -69,12 +76,20 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	Button mForegroundColorChooseBt;
 	Button mBackgroundColorChooseBt;
 	Button mResetColorBt;
+	Button mGradientColorChooseBt;
+	Button mResetGradientColorBt;
+	Spinner mGradientTypeSpinner;
+	Button mFinderColorChooseBt;
+	Button mResetFinderColorBt;
 
 	Handler mHandler = new Handler();
 
 	int width;
 	int mForegroundColor = Color.BLACK;
 	int mBackgroundColor = Color.WHITE;
+	int mGradientColor = Color.BLACK;
+	GRADIENT_TYPE mGadientType = GRADIENT_TYPE.ROUND;
+	int mFinderColor = Color.BLACK;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +109,11 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mForegroundColorChooseBt = (Button) findViewById(R.id.foreground_color_choose_bt);
 		mBackgroundColorChooseBt = (Button) findViewById(R.id.background_color_choose_bt);
 		mResetColorBt = (Button) findViewById(R.id.color_reset_bt);
+		mGradientColorChooseBt = (Button) findViewById(R.id.gradient_color_choose_bt);
+		mResetGradientColorBt = (Button) findViewById(R.id.gradient_color_reset_bt);
+		initGradientSpinner();
+		mFinderColorChooseBt = (Button) findViewById(R.id.finder_color_choose_bt);
+		mResetFinderColorBt = (Button) findViewById(R.id.finder_color_reset_bt);
 
 		mShapeBar.setOnSeekBarChangeListener(this);
 		mResetShapeBt.setOnClickListener(this);
@@ -108,9 +128,15 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mQrcodeImageView.setOnClickListener(this);
 		mQrcodeImageView.setOnLongClickListener(this);
 		mResetColorBt.setOnClickListener(this);
+		mGradientColorChooseBt.setOnClickListener(this);
+		mResetGradientColorBt.setOnClickListener(this);
+		mFinderColorChooseBt.setOnClickListener(this);
+		mResetFinderColorBt.setOnClickListener(this);
 
 		mForegroundColorChooseBt.setBackgroundColor(mForegroundColor);
 		mBackgroundColorChooseBt.setBackgroundColor(mBackgroundColor);
+		mGradientColorChooseBt.setBackgroundColor(mGradientColor);
+		mFinderColorChooseBt.setBackgroundColor(mFinderColor);
 
 		mContentEt.setText(CONTENT);
 
@@ -118,6 +144,47 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		// QrcodeUtil.decode(BitmapFactory.decodeFile("/sdcard/test/test.png"));
 		// System.out.println(result == null);
 		postChange();
+	}
+
+	private void initGradientSpinner() {
+		mGradientTypeSpinner = (Spinner) findViewById(R.id.gradient_type_select_sp);
+		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+				this, R.array.gradient_type_array,
+				android.R.layout.simple_spinner_item);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		mGradientTypeSpinner.setAdapter(adapter);
+
+		mGradientTypeSpinner
+				.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+					@Override
+					public void onItemSelected(AdapterView<?> arg0, View arg1,
+							int arg2, long arg3) {
+						switch (arg2) {
+						case 0:
+							mGadientType = GRADIENT_TYPE.ROUND;
+							break;
+						case 1:
+							mGadientType = GRADIENT_TYPE.SLASH;
+							break;
+						case 2:
+							mGadientType = GRADIENT_TYPE.BACKSLASH;
+							break;
+						case 3:
+							mGadientType = GRADIENT_TYPE.HORIZONTAL;
+							break;
+						case 4:
+							mGadientType = GRADIENT_TYPE.VERTICAL;
+							break;
+						}
+						postChange();
+					}
+
+					@Override
+					public void onNothingSelected(AdapterView<?> arg0) {
+
+					}
+				});
 	}
 
 	@Override
@@ -204,6 +271,23 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			mBackgroundColorChooseBt.setBackgroundColor(mBackgroundColor);
 			postChange();
 			break;
+		case R.id.gradient_color_choose_bt:
+			new ColorPickerDialog(this, this, mGradientColor,
+					COLOR_TYPE_GRADIENT).show();
+			break;
+		case R.id.gradient_color_reset_bt:
+			mGradientColor = mForegroundColor;
+			mGradientColorChooseBt.setBackgroundColor(mGradientColor);
+			postChange();
+			break;
+		case R.id.finder_color_choose_bt:
+			new ColorPickerDialog(this, this, mFinderColor, COLOR_TYPE_FINDER)
+					.show();
+			break;
+		case R.id.finder_color_reset_bt:
+			mFinderColor = mForegroundColor;
+			mGradientColorChooseBt.setBackgroundColor(mFinderColor);
+			postChange();
 		default:
 			break;
 		}
@@ -235,7 +319,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 					}
 					Bitmap bitmap = QrcodeUtil.encode(content, width, width,
 							-1, shape, radiusPercent, level, mForegroundColor,
-							mBackgroundColor);
+							mBackgroundColor, mFinderColor, mGradientColor,
+							mGadientType);
 					mQrcodeImageView.setImageBitmap(bitmap);
 				} catch (WriterException e) {
 					e.printStackTrace();
@@ -281,6 +366,15 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		case COLOR_TYPE_BACKGROUND:
 			mBackgroundColor = color;
 			mBackgroundColorChooseBt.setBackgroundColor(color);
+			break;
+		case COLOR_TYPE_GRADIENT:
+			mGradientColor = color;
+			mGradientColorChooseBt.setBackgroundColor(color);
+			break;
+		case COLOR_TYPE_FINDER:
+			mFinderColor = color;
+			mFinderColorChooseBt.setBackgroundColor(color);
+			break;
 		default:
 			break;
 		}
