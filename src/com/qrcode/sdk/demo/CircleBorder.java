@@ -10,9 +10,9 @@ public class CircleBorder extends Border {
 
 	private RectF mInsideRect;
 
-	public CircleBorder(int width, int height) {
-		super(width, height);
-		mDiameter = width < height ? width : height;
+	public CircleBorder(int width, int height, int padding) {
+		super(width, height, padding);
+		mDiameter = width < height ? width - 2 * padding : height - 2 * padding;
 		float insideW = (float) (mDiameter * Math.sqrt(2) / 2);
 		mInsideRect = new RectF(mWidth / 2.0f - insideW / 2, mHeight / 2.0f
 				- insideW / 2, mWidth / 2.0f + insideW / 2, mHeight / 2.0f

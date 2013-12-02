@@ -2,60 +2,21 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity" >
-
-    <ImageView
-        android:id="@+id/qrcode_img_iv"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true" />
+    tools:context=".QrcodeActivity" >
 
     <RelativeLayout
         android:id="@+id/setting_rl"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:alpha="0.8"
-        android:background="#CCCCCC"
-        android:paddingLeft="5dp"
-        android:paddingRight="5dp"
-        android:visibility="gone" >
-
-        <RelativeLayout
-            android:id="@+id/content_rl"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentTop="true" >
-
-            <Button
-                android:id="@+id/generate_bt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:text="generate" />
-
-            <Button
-                android:id="@+id/clear_content_bt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:layout_below="@id/generate_bt"
-                android:text="clear" />
-
-            <EditText
-                android:id="@+id/content_et"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_alignParentLeft="true"
-                android:layout_toLeftOf="@id/generate_bt"
-                android:gravity="top|left"
-                android:lines="5" />
-        </RelativeLayout>
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:visibility="visible" >
 
         <RelativeLayout
             android:id="@+id/shape_rl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/content_rl" >
+            android:visibility="gone" >
 
             <TextView
                 android:id="@+id/shape_label_tv"
@@ -72,7 +33,6 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
-                android:layout_marginLeft="5dp"
                 android:text="reset" />
 
             <SeekBar
@@ -88,7 +48,8 @@
             android:id="@+id/ec_level_rl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/shape_rl" >
+            android:layout_below="@id/shape_rl"
+            android:visibility="gone" >
 
             <TextView
                 android:id="@+id/ec_level_label_tv"
@@ -140,21 +101,22 @@
             android:id="@+id/color_rl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/ec_level_rl" >
+            android:layout_below="@id/ec_level_rl"
+            android:visibility="gone" >
 
             <TextView
                 android:id="@+id/foreground_color_label_tv"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:text="Foreground" />
+                android:text="前景" />
 
             <Button
                 android:id="@+id/foreground_color_choose_bt"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_centerVertical="true"
-                android:layout_marginLeft="15dp"
+                android:layout_marginLeft="5dp"
                 android:layout_toRightOf="@id/foreground_color_label_tv"
                 android:background="#000000" />
 
@@ -163,18 +125,27 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:layout_marginLeft="15dp"
+                android:layout_marginLeft="5dp"
                 android:layout_toRightOf="@id/foreground_color_choose_bt"
-                android:text="Background" />
+                android:text="背景" />
 
             <Button
                 android:id="@+id/background_color_choose_bt"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_centerVertical="true"
-                android:layout_marginLeft="15dp"
+                android:layout_marginLeft="5dp"
                 android:layout_toRightOf="@id/background_color_label_tv"
                 android:background="#FFFFFF" />
+
+            <Button
+                android:id="@+id/background_image_choose_bt"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="5dp"
+                android:layout_toRightOf="@id/background_color_choose_bt"
+                android:text="背景图" />
 
             <Button
                 android:id="@+id/color_reset_bt"
@@ -182,30 +153,6 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
-                android:layout_marginRight="10dp"
-                android:text="reset" />
-        </RelativeLayout>
-
-        <RelativeLayout
-            android:id="@+id/image_rl"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/color_rl" >
-
-            <Button
-                android:id="@+id/background_image_choose_bt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerVertical="true"
-                android:text="背景图" />
-
-            <Button
-                android:id="@+id/background_image_reset_bt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
-                android:layout_centerVertical="true"
-                android:layout_marginRight="10dp"
                 android:text="reset" />
         </RelativeLayout>
 
@@ -213,11 +160,12 @@
             android:id="@+id/gradient_color_rl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/image_rl" >
+            android:layout_below="@id/color_rl"
+            android:visibility="gone" >
 
             <TextView
                 android:id="@+id/gradient_color_label_tv"
-                android:layout_width="73dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:gravity="center"
@@ -228,7 +176,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_centerVertical="true"
-                android:layout_marginLeft="15dp"
+                android:layout_marginLeft="5dp"
                 android:layout_toRightOf="@id/gradient_color_label_tv"
                 android:background="#FFFFFF" />
 
@@ -245,7 +193,6 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
-                android:layout_marginRight="10dp"
                 android:text="reset" />
         </RelativeLayout>
 
@@ -253,11 +200,12 @@
             android:id="@+id/finder_color_rl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/gradient_color_rl" >
+            android:layout_below="@id/gradient_color_rl"
+            android:visibility="gone" >
 
             <TextView
                 android:id="@+id/finder_color_label_tv"
-                android:layout_width="73dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:gravity="center"
@@ -268,7 +216,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:layout_centerVertical="true"
-                android:layout_marginLeft="15dp"
+                android:layout_marginLeft="5dp"
                 android:layout_toRightOf="@id/finder_color_label_tv"
                 android:background="#FFFFFF" />
 
@@ -278,19 +226,19 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
-                android:layout_marginRight="10dp"
                 android:text="reset" />
         </RelativeLayout>
 
         <RelativeLayout
-            android:id="@+id/border_color_rl"
+            android:id="@+id/border_rl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/finder_color_rl" >
+            android:layout_below="@id/finder_color_rl"
+            android:visibility="gone" >
 
             <TextView
                 android:id="@+id/border_label_tv"
-                android:layout_width="73dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
                 android:gravity="center"
@@ -310,9 +258,14 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
-                android:layout_marginRight="10dp"
                 android:text="reset" />
         </RelativeLayout>
     </RelativeLayout>
+
+    <ImageView
+        android:id="@+id/qrcode_img_iv"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true" />
 
 </RelativeLayout>

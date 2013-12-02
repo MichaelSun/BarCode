@@ -8,10 +8,13 @@ public abstract class Border {
 	protected int mWidth = 0;
 
 	protected int mHeight = 0;
+	
+	protected int mPadding = 0;
 
-	public Border(int width, int height) {
+	public Border(int width, int height, int padding) {
 		mWidth = width;
 		mHeight = height;
+		mPadding = padding;
 	}
 
 	public int getWidth() {

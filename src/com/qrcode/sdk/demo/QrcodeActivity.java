@@ -5,7 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 import android.annotation.SuppressLint;
@@ -17,7 +19,6 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.CompressFormat;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.ExifInterface;
@@ -29,7 +30,6 @@ import android.provider.MediaStore;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Images.ImageColumns;
 import android.provider.MediaStore.MediaColumns;
-import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -38,31 +38,28 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
-import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.zxing.WriterException;
-import com.google.zxing.client.result.ParsedResult;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.qrcode.sdk.demo.QrcodeUtil.BORDER_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.GRADIENT_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.Shape;
 
 @SuppressLint("DefaultLocale")
-public class MainActivity extends Activity implements OnSeekBarChangeListener,
-		OnClickListener, OnCheckedChangeListener,
+public class QrcodeActivity extends Activity implements
+		OnSeekBarChangeListener, OnClickListener, OnCheckedChangeListener,
 		ColorPickerDialog.OnColorChangedListener, View.OnLongClickListener {
-	private static String MECARD_SAMPLE = "MECARD:N:Ting Sun;EMAIL:ting.sun@dajie-inc.com;ADR:Beijing Chaoyang;TEL:18612560621;;";
-	private static String VCARD_SAMPLE = "BEGIN:VCARD\nVERSION:3.0\nFN:Ting\nPHOTO;VALUE=uri:http://tp3.sinaimg.cn/1668659954/180/5679291057/1\nTEL;CELL;VOICE:18612560521\nURL:http://lzem.me\nEND:VCARD";
-	// private static String CONTENT = MECARD_SAMPLE;
-	private static String CONTENT = VCARD_SAMPLE;
+
+	public static final String EXTRA_CONTENT = "extra_content";
+	private String mContent = "";
+
 	private static int SEEKBAR_MAX = 1000;
 
 	private static final int COLOR_TYPE_FOREGROUND = 0x001;
@@ -73,18 +70,22 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	private static final int REQUEST_LOAD_IMAGE = 1;
 
 	ImageView mQrcodeImageView;
-	RelativeLayout mSettingPanel;
+
+	View mShapeLayout;
+	View mLevelLayout;
+	View mColorLayout;
+	View mGradientLayout;
+	View mFinderColorLayout;
+	View mBorderLayout;
+	List<View> mMenuViews;
+
 	SeekBar mShapeBar;
 	Button mResetShapeBt;
-	EditText mContentEt;
-	Button mGenerateBT;
-	Button mClearContentBt;
 	RadioGroup mEcLevelRg;
 	Button mForegroundColorChooseBt;
 	Button mBackgroundColorChooseBt;
 	Button mResetColorBt;
 	Button mBackgroundImageChooseBt;
-	Button mBackgroundImageResetBt;
 	Button mGradientColorChooseBt;
 	Button mResetGradientColorBt;
 	Spinner mGradientTypeSpinner;
@@ -107,23 +108,37 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
+		setContentView(R.layout.activity_qrcode);
+
+		if (getIntent() != null) {
+			mContent = getIntent().getStringExtra(EXTRA_CONTENT);
+		}
 
 		width = getResources().getDisplayMetrics().widthPixels;
 
-		mSettingPanel = (RelativeLayout) findViewById(R.id.setting_rl);
+		mMenuViews = new ArrayList<View>();
+		mShapeLayout = findViewById(R.id.shape_rl);
+		mLevelLayout = findViewById(R.id.ec_level_rl);
+		mColorLayout = findViewById(R.id.color_rl);
+		mGradientLayout = findViewById(R.id.gradient_color_rl);
+		mFinderColorLayout = findViewById(R.id.finder_color_rl);
+		mBorderLayout = findViewById(R.id.border_rl);
+		mMenuViews.add(mShapeLayout);
+		mMenuViews.add(mLevelLayout);
+		mMenuViews.add(mColorLayout);
+		mMenuViews.add(mGradientLayout);
+		mMenuViews.add(mFinderColorLayout);
+		mMenuViews.add(mBorderLayout);
+
 		mQrcodeImageView = (ImageView) findViewById(R.id.qrcode_img_iv);
+
 		mShapeBar = (SeekBar) findViewById(R.id.shape_bar);
 		mResetShapeBt = (Button) findViewById(R.id.shape_reset_bt);
-		mContentEt = (EditText) findViewById(R.id.content_et);
-		mGenerateBT = (Button) findViewById(R.id.generate_bt);
-		mClearContentBt = (Button) findViewById(R.id.clear_content_bt);
 		mEcLevelRg = (RadioGroup) findViewById(R.id.ec_level_rg);
 		mForegroundColorChooseBt = (Button) findViewById(R.id.foreground_color_choose_bt);
 		mBackgroundColorChooseBt = (Button) findViewById(R.id.background_color_choose_bt);
 		mResetColorBt = (Button) findViewById(R.id.color_reset_bt);
 		mBackgroundImageChooseBt = (Button) findViewById(R.id.background_image_choose_bt);
-		mBackgroundImageResetBt = (Button) findViewById(R.id.background_image_reset_bt);
 		mGradientColorChooseBt = (Button) findViewById(R.id.gradient_color_choose_bt);
 		mResetGradientColorBt = (Button) findViewById(R.id.gradient_color_reset_bt);
 		initGradientSpinner();
@@ -136,8 +151,6 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mResetShapeBt.setOnClickListener(this);
 		mShapeBar.setMax(SEEKBAR_MAX);
 		mShapeBar.setProgress(SEEKBAR_MAX / 2);
-		mClearContentBt.setOnClickListener(this);
-		mGenerateBT.setOnClickListener(this);
 		mEcLevelRg.setOnCheckedChangeListener(this);
 		mForegroundColorChooseBt.setOnClickListener(this);
 		mBackgroundColorChooseBt.setOnClickListener(this);
@@ -146,7 +159,6 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mQrcodeImageView.setOnLongClickListener(this);
 		mResetColorBt.setOnClickListener(this);
 		mBackgroundImageChooseBt.setOnClickListener(this);
-		mBackgroundImageResetBt.setOnClickListener(this);
 		mGradientColorChooseBt.setOnClickListener(this);
 		mResetGradientColorBt.setOnClickListener(this);
 		mFinderColorChooseBt.setOnClickListener(this);
@@ -157,8 +169,6 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mBackgroundColorChooseBt.setBackgroundColor(mBackgroundColor);
 		mGradientColorChooseBt.setBackgroundColor(mGradientColor);
 		mFinderColorChooseBt.setBackgroundColor(mFinderColor);
-
-		mContentEt.setText(CONTENT);
 
 		// ParsedResult result =
 		// QrcodeUtil.decode(BitmapFactory.decodeFile("/sdcard/test/test.png"));
@@ -250,12 +260,56 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		if (item.getItemId() == R.id.action_settings) {
-			mSettingPanel
-					.setVisibility(mSettingPanel.getVisibility() == View.GONE ? View.VISIBLE
-							: View.GONE);
+		switch (item.getItemId()) {
+		case R.id.action_shape:
+			mShapeLayout.setVisibility(View.VISIBLE);
+			mLevelLayout.setVisibility(View.GONE);
+			mColorLayout.setVisibility(View.GONE);
+			mGradientLayout.setVisibility(View.GONE);
+			mFinderColorLayout.setVisibility(View.GONE);
+			mBorderLayout.setVisibility(View.GONE);
+			return true;
+		case R.id.action_level:
+			mShapeLayout.setVisibility(View.GONE);
+			mLevelLayout.setVisibility(View.VISIBLE);
+			mColorLayout.setVisibility(View.GONE);
+			mGradientLayout.setVisibility(View.GONE);
+			mFinderColorLayout.setVisibility(View.GONE);
+			mBorderLayout.setVisibility(View.GONE);
+			return true;
+		case R.id.action_color:
+			mShapeLayout.setVisibility(View.GONE);
+			mLevelLayout.setVisibility(View.GONE);
+			mColorLayout.setVisibility(View.VISIBLE);
+			mGradientLayout.setVisibility(View.GONE);
+			mFinderColorLayout.setVisibility(View.GONE);
+			mBorderLayout.setVisibility(View.GONE);
+			return true;
+		case R.id.action_gradient:
+			mShapeLayout.setVisibility(View.GONE);
+			mLevelLayout.setVisibility(View.GONE);
+			mColorLayout.setVisibility(View.GONE);
+			mGradientLayout.setVisibility(View.VISIBLE);
+			mFinderColorLayout.setVisibility(View.GONE);
+			mBorderLayout.setVisibility(View.GONE);
+			return true;
+		case R.id.action_finder:
+			mShapeLayout.setVisibility(View.GONE);
+			mLevelLayout.setVisibility(View.GONE);
+			mColorLayout.setVisibility(View.GONE);
+			mGradientLayout.setVisibility(View.GONE);
+			mFinderColorLayout.setVisibility(View.VISIBLE);
+			mBorderLayout.setVisibility(View.GONE);
+			return true;
+		case R.id.action_broder:
+			mShapeLayout.setVisibility(View.GONE);
+			mLevelLayout.setVisibility(View.GONE);
+			mColorLayout.setVisibility(View.GONE);
+			mGradientLayout.setVisibility(View.GONE);
+			mFinderColorLayout.setVisibility(View.GONE);
+			mBorderLayout.setVisibility(View.VISIBLE);
+			return true;
 		}
-
 		return super.onOptionsItemSelected(item);
 	}
 
@@ -303,9 +357,6 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		case R.id.generate_bt:
 			postChange();
 			break;
-		case R.id.clear_content_bt:
-			mContentEt.setText("");
-			break;
 		case R.id.foreground_color_choose_bt:
 			new ColorPickerDialog(this, this, mForegroundColor,
 					COLOR_TYPE_FOREGROUND).show();
@@ -314,27 +365,19 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			new ColorPickerDialog(this, this, mBackgroundColor,
 					COLOR_TYPE_BACKGROUND).show();
 			break;
-		case R.id.qrcode_img_iv:
-			mSettingPanel
-					.setVisibility(mSettingPanel.getVisibility() == View.GONE ? View.VISIBLE
-							: View.GONE);
-			break;
 		case R.id.color_reset_bt:
 			mForegroundColor = Color.BLACK;
 			mBackgroundColor = Color.WHITE;
 			mForegroundColorChooseBt.setBackgroundColor(mForegroundColor);
 			mBackgroundColorChooseBt.setBackgroundColor(mBackgroundColor);
-			postChange();
-			break;
-		case R.id.background_image_choose_bt:
-			selectPhoto();
-			break;
-		case R.id.background_image_reset_bt:
 			if (mBackgroundBm != null && !mBackgroundBm.isRecycled()) {
 				mBackgroundBm.recycle();
 			}
 			mBackgroundBm = null;
 			postChange();
+			break;
+		case R.id.background_image_choose_bt:
+			selectPhoto();
 			break;
 		case R.id.gradient_color_choose_bt:
 			new ColorPickerDialog(this, this, mGradientColor,
@@ -353,10 +396,12 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			mFinderColor = mForegroundColor;
 			mFinderColorChooseBt.setBackgroundColor(mFinderColor);
 			postChange();
+			break;
 		case R.id.border_reset_bt:
 			mBorderType = BORDER_TYPE.NONE;
 			mBorderTypeSpinner.setSelection(0);
 			postChange();
+			break;
 		default:
 			break;
 		}
@@ -368,13 +413,9 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			public void run() {
 				try {
 					int progress = mShapeBar.getProgress();
-					String content = mContentEt.getText().toString();
-					if (TextUtils.isEmpty(content)) {
-						mContentEt.setText(CONTENT);
-						content = CONTENT;
-					}
 					Shape shape = Shape.NORMAL;
-					ErrorCorrectionLevel level = MainActivity.this.getEcLevel();
+					ErrorCorrectionLevel level = QrcodeActivity.this
+							.getEcLevel();
 					if (progress < SEEKBAR_MAX / 2) {
 						shape = Shape.WATER;
 					} else if (progress > SEEKBAR_MAX / 2) {
@@ -386,10 +427,11 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 						// 液化半径上限为0.7
 						radiusPercent *= 0.7;
 					}
-					Bitmap bitmap = QrcodeUtil.encode(content, width, width,
-							-1, shape, radiusPercent, level, mForegroundColor,
-							mBackgroundColor, mBackgroundBm, mFinderColor,
-							mGradientColor, mGadientType, mBorderType);
+					Bitmap bitmap = QrcodeUtil.encode(mContent, width * 4 / 5,
+							width * 4 / 5, -1, shape, radiusPercent, level,
+							mForegroundColor, mBackgroundColor, mBackgroundBm,
+							mFinderColor, mGradientColor, mGadientType,
+							mBorderType);
 					mQrcodeImageView.setImageBitmap(bitmap);
 				} catch (WriterException e) {
 					e.printStackTrace();
@@ -543,7 +585,7 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			runOnUiThread(new Runnable() {
 				@Override
 				public void run() {
-					Toast.makeText(MainActivity.this, "save success!",
+					Toast.makeText(QrcodeActivity.this, "save success!",
 							Toast.LENGTH_SHORT).show();
 				}
 			});

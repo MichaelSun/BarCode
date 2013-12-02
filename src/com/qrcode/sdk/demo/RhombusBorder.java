@@ -9,9 +9,9 @@ public class RhombusBorder extends Border {
 
 	private float mInsideW = 0;
 
-	public RhombusBorder(int width, int height) {
-		super(width, height);
-		mInsideW = (width < height ? width : height) / 2.0f;
+	public RhombusBorder(int width, int height, int padding) {
+		super(width, height, padding);
+		mInsideW = (width < height ? width - 2 * padding : height - 2 * padding) / 2.0f;
 		mInsideRect = new RectF((mWidth - mInsideW) / 2,
 				(mHeight - mInsideW) / 2, (mWidth + mInsideW) / 2,
 				(mHeight + mInsideW) / 2);
@@ -25,11 +25,11 @@ public class RhombusBorder extends Border {
 	@Override
 	protected Path getClipPath() {
 		Path path = new Path();
-		path.moveTo(0, mHeight >> 1);
-		path.lineTo(mWidth >> 1, 0);
-		path.lineTo(mWidth, mHeight >> 1);
-		path.lineTo(mWidth >> 1, mHeight);
-		path.lineTo(0, mHeight >> 1);
+		path.moveTo(mPadding, mHeight / 2.0f);
+		path.lineTo(mWidth / 2.0f, mPadding);
+		path.lineTo(mWidth - mPadding, mHeight / 2.0f);
+		path.lineTo(mWidth / 2.0f, mHeight - mPadding);
+		path.lineTo(mPadding, mHeight / 2.0f);
 		return path;
 	}
 
