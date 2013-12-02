@@ -12,5 +12,11 @@
         <item>横向</item>  
         <item>纵向</item>  
     </string-array>
+    
+    <string-array name="border_type_array">
+        <item>无</item>  
+        <item>圆形</item>  
+        <item>菱形</item>  
+    </string-array>
 
 </resources>

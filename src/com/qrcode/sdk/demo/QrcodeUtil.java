@@ -2,6 +2,7 @@ package com.qrcode.sdk.demo;
 
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Random;
 
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -43,14 +44,20 @@ public class QrcodeUtil {
 		ROUND, SLASH, BACKSLASH, HORIZONTAL, VERTICAL
 	}
 
+	public static enum BORDER_TYPE {
+		NONE, CIRCLE, RHOMBUS
+	}
+
 	private static final int QUIET_ZONE_SIZE = 4;
+
+	private static Random mRandom = new Random();
 
 	public static Bitmap encode(String contents, int width, int height,
 			int padding, Shape shape, float radiusPercent,
 			ErrorCorrectionLevel level, int foregroundColor,
 			int backgroundColor, Bitmap backgroundBm, int finderColor,
-			int gradientColor, GRADIENT_TYPE gradientType)
-			throws WriterException {
+			int gradientColor, GRADIENT_TYPE gradientType,
+			BORDER_TYPE borderType) throws WriterException {
 		if (TextUtils.isEmpty(contents)) {
 			throw new IllegalArgumentException("Found empty contents");
 		}
@@ -65,10 +72,17 @@ public class QrcodeUtil {
 		// table.put(EncodeHintType.CHARACTER_SET, "UTF-8");
 
 		QRCode code = Encoder.encode(contents, level, table);
-		return renderResult(code, width, height, padding < 0 ? QUIET_ZONE_SIZE
-				: padding, shape, radiusPercent, foregroundColor,
-				backgroundColor, backgroundBm, finderColor, gradientColor,
-				gradientType);
+		if (borderType == BORDER_TYPE.NONE) {
+			return renderResult(code, width, height,
+					padding < 0 ? QUIET_ZONE_SIZE : padding, shape,
+					radiusPercent, foregroundColor, backgroundColor,
+					backgroundBm, finderColor, gradientColor, gradientType);
+		} else {
+			return renderResultWithOutside(code, width, height,
+					padding < 0 ? QUIET_ZONE_SIZE : padding, shape,
+					radiusPercent, foregroundColor, backgroundColor,
+					finderColor, gradientColor, gradientType, borderType);
+		}
 	}
 
 	private static Bitmap renderResult(QRCode code, int width, int height,
@@ -97,9 +111,10 @@ public class QrcodeUtil {
 		Paint paint = new Paint();
 		paint.setAntiAlias(true);
 		paint.setStyle(Style.FILL);
-		
+
 		if (backgroundBm != null) {
-			Rect src = new Rect(0, 0, backgroundBm.getWidth(), backgroundBm.getHeight());
+			Rect src = new Rect(0, 0, backgroundBm.getWidth(),
+					backgroundBm.getHeight());
 			Rect dst = new Rect(0, 0, outputWidth, outputHeight);
 			canvas.drawBitmap(backgroundBm, src, dst, paint);
 		} else {
@@ -133,6 +148,185 @@ public class QrcodeUtil {
 							radio = (float) (Math.hypot(inputWidth / 2.0
 									- inputX, inputHeight / 2.0 - inputY) / (Math
 									.min(inputWidth, inputHeight) / 2.0));
+						}
+						int color = getGradientColor(gradientColor,
+								foregroundColor, radio);
+						paint.setColor(color);
+					} else {
+						paint.setColor(foregroundColor);
+					}
+				}
+
+				if (input.get(inputX, inputY) == 1) {
+					if (shape == Shape.ROUND) {
+						// 圆角
+						canvas.drawRoundRect(new RectF(outputX, outputY,
+								outputX + multiple, outputY + multiple),
+								roundRadius, roundRadius, paint);
+					} else if (shape == Shape.WATER) {
+						// 液态
+						drawRoundRect(
+								canvas,
+								new RectF(outputX, outputY, outputX + multiple,
+										outputY + multiple),
+								paint,
+								roundRadius,
+								isSet(input, inputX - 1, inputY - 1)
+										|| isSet(input, inputX, inputY - 1)
+										|| isSet(input, inputX - 1, inputY),
+								isSet(input, inputX, inputY - 1)
+										|| isSet(input, inputX + 1, inputY - 1)
+										|| isSet(input, inputX + 1, inputY),
+								isSet(input, inputX, inputY + 1)
+										|| isSet(input, inputX - 1, inputY + 1)
+										|| isSet(input, inputX - 1, inputY),
+								isSet(input, inputX + 1, inputY)
+										|| isSet(input, inputX + 1, inputY + 1)
+										|| isSet(input, inputX, inputY + 1));
+					} else {
+						// 正常
+						canvas.drawRect(outputX, outputY, outputX + multiple,
+								outputY + multiple, paint);
+					}
+				} else {
+					if (shape == Shape.WATER) {
+						RectF rect = new RectF(outputX, outputY, outputX
+								+ multiple, outputY + multiple);
+						if (isSet(input, inputX, inputY - 1)
+								&& isSet(input, inputX - 1, inputY)) {
+							drawAntiRoundRect(canvas, paint, roundRadius, rect,
+									1);
+						}
+
+						if (isSet(input, inputX, inputY - 1)
+								&& isSet(input, inputX + 1, inputY)) {
+							drawAntiRoundRect(canvas, paint, roundRadius, rect,
+									2);
+						}
+
+						if (isSet(input, inputX, inputY + 1)
+								&& isSet(input, inputX + 1, inputY)) {
+							drawAntiRoundRect(canvas, paint, roundRadius, rect,
+									3);
+						}
+
+						if (isSet(input, inputX - 1, inputY)
+								&& isSet(input, inputX, inputY + 1)) {
+							drawAntiRoundRect(canvas, paint, roundRadius, rect,
+									4);
+						}
+
+					}
+				}
+			}
+		}
+
+		return bitmap;
+	}
+
+	private static Bitmap renderResultWithOutside(QRCode code, int width,
+			int height, int quietZone, Shape shape, float radiusPercent,
+			int foregroundColor, int backgroundColor, int finderColor,
+			int gradientColor, GRADIENT_TYPE gradientType,
+			BORDER_TYPE borderType) {
+		ByteMatrix input = code.getMatrix();
+		if (input == null) {
+			throw new IllegalStateException();
+		}
+		int inputWidth = input.getWidth();
+		int inputHeight = input.getHeight();
+		int outputWidth = Math.max(width, inputWidth);
+		int outputHeight = Math.max(height, inputHeight);
+
+		Bitmap bitmap = Bitmap.createBitmap(outputWidth, outputHeight,
+				Config.ARGB_8888);
+		bitmap.eraseColor(255);
+		Canvas canvas = new Canvas(bitmap);
+		Paint paint = new Paint();
+		paint.setAntiAlias(true);
+		paint.setStyle(Style.FILL);
+
+		int leftPadding = quietZone;
+		int topPadding = quietZone;
+
+		int borderWidth = outputWidth - leftPadding * 2;
+		int borderHeight = outputHeight - topPadding * 2;
+
+		Border border;
+		if (borderType == BORDER_TYPE.RHOMBUS) {
+			border = new RhombusBorder(borderWidth, borderHeight);
+		} else {
+			border = new CircleBorder(borderWidth, borderHeight);
+		}
+
+		Path path = border.getClipPath();
+		canvas.clipPath(path);
+
+		RectF insideRect = border.getInsideArea();
+		float insideWidth = insideRect.width();
+		float insideHeight = insideRect.height();
+
+		float multiple = Math.min(insideWidth / inputWidth, insideHeight
+				/ inputHeight);
+
+		int roundRadius = (int) (multiple * radiusPercent);
+
+		canvas.drawColor(backgroundColor);
+
+		for (float outputY = topPadding; outputY < outputHeight - topPadding; outputY += multiple) {
+			for (float outputX = leftPadding; outputX < outputWidth
+					- leftPadding; outputX += multiple) {
+				float x = outputX - leftPadding;
+				float y = outputY - topPadding;
+
+				int inX = (int) ((x - insideRect.left) / multiple);
+				int inY = (int) ((y - insideRect.top) / multiple);
+
+				if (((inX == 0 || inX == -1) && x < insideRect.left && x
+						+ multiple >= insideRect.left)
+						|| inX == inputWidth
+						|| ((inY == 0 || inY == -1) && y < insideRect.top
+								&& y + multiple >= insideRect.top || inY == inputHeight)) {
+					continue;
+				}
+
+				int inputX, inputY = 0;
+				if (inX < 0 || inX >= inputWidth || inY < 0
+						|| inY >= inputHeight) {
+					inputX = (inX + inputWidth) % inputWidth;
+					inputY = (inY + inputHeight) % inputHeight;
+					if (isFinderPatterns(inputX, inputY, inputWidth,
+							inputHeight)) {
+						inputX = mRandom.nextInt(inputWidth);
+						inputY = mRandom.nextInt(inputHeight);
+					}
+				} else {
+					inputX = inX % inputWidth;
+					inputY = inY % inputHeight;
+				}
+
+				// FinderPatterns
+				if (isFinderPatterns(inX, inY, inputWidth, inputHeight)) {
+					paint.setColor(finderColor);
+				} else {
+					if (gradientColor != foregroundColor) {
+						// 渐变色
+						float radio = 0f;
+						if (gradientType == GRADIENT_TYPE.HORIZONTAL) {
+							radio = x * 1.0f / borderWidth;
+						} else if (gradientType == GRADIENT_TYPE.VERTICAL) {
+							radio = y * 1.0f / borderHeight;
+						} else if (gradientType == GRADIENT_TYPE.SLASH) {
+							radio = (float) (Math.hypot(x - borderWidth,
+									borderHeight - y) / Math.hypot(borderWidth,
+									borderHeight));
+						} else if (gradientType == GRADIENT_TYPE.BACKSLASH) {
+							radio = (float) (Math.hypot(x, borderHeight - y) / Math
+									.hypot(borderWidth, borderHeight));
+						} else {
+							radio = (float) (Math.hypot(borderWidth / 2.0 - x,
+									borderHeight / 2.0 - y) / (Math.min(
+									borderWidth, borderHeight) / 2.0));
 						}
 						int color = getGradientColor(gradientColor,
 								foregroundColor, radio);
@@ -348,4 +542,5 @@ public class QrcodeUtil {
 			return true;
 		return false;
 	}
+
 }

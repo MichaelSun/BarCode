@@ -49,6 +49,7 @@ import android.widget.Toast;
 
 import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.qrcode.sdk.demo.QrcodeUtil.BORDER_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.GRADIENT_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.Shape;
 
@@ -84,6 +85,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	Spinner mGradientTypeSpinner;
 	Button mFinderColorChooseBt;
 	Button mResetFinderColorBt;
+	Spinner mBorderTypeSpinner;
+	Button mResetBorderBt;
 
 	Handler mHandler = new Handler();
 
@@ -94,6 +97,7 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 	int mGradientColor = Color.BLACK;
 	GRADIENT_TYPE mGadientType = GRADIENT_TYPE.ROUND;
 	int mFinderColor = Color.BLACK;
+	BORDER_TYPE mBorderType = BORDER_TYPE.NONE;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -120,6 +124,8 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		initGradientSpinner();
 		mFinderColorChooseBt = (Button) findViewById(R.id.finder_color_choose_bt);
 		mResetFinderColorBt = (Button) findViewById(R.id.finder_color_reset_bt);
+		initBorderSpinner();
+		mResetBorderBt = (Button) findViewById(R.id.border_reset_bt);
 
 		mShapeBar.setOnSeekBarChangeListener(this);
 		mResetShapeBt.setOnClickListener(this);
@@ -140,6 +146,7 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		mResetGradientColorBt.setOnClickListener(this);
 		mFinderColorChooseBt.setOnClickListener(this);
 		mResetFinderColorBt.setOnClickListener(this);
+		mResetBorderBt.setOnClickListener(this);
 
 		mForegroundColorChooseBt.setBackgroundColor(mForegroundColor);
 		mBackgroundColorChooseBt.setBackgroundColor(mBackgroundColor);
@@ -180,6 +187,41 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 							break;
 						case 4:
 							mGadientType = GRADIENT_TYPE.VERTICAL;
+							break;
+						}
+						postChange();
+					}
+
+					@Override
+					public void onNothingSelected(AdapterView<?> arg0) {
+
+					}
+				});
+	}
+
+	private void initBorderSpinner() {
+		mBorderTypeSpinner = (Spinner) findViewById(R.id.border_type_select_sp);
+		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+				this, R.array.border_type_array,
+				android.R.layout.simple_spinner_item);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		mBorderTypeSpinner.setAdapter(adapter);
+
+		mBorderTypeSpinner
+				.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+					@Override
+					public void onItemSelected(AdapterView<?> arg0, View arg1,
+							int arg2, long arg3) {
+						switch (arg2) {
+						case 0:
+							mBorderType = BORDER_TYPE.NONE;
+							break;
+						case 1:
+							mBorderType = BORDER_TYPE.CIRCLE;
+							break;
+						case 2:
+							mBorderType = BORDER_TYPE.RHOMBUS;
 							break;
 						}
 						postChange();
@@ -303,6 +345,10 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 			mFinderColor = mForegroundColor;
 			mFinderColorChooseBt.setBackgroundColor(mFinderColor);
 			postChange();
+		case R.id.border_reset_bt:
+			mBorderType = BORDER_TYPE.NONE;
+			mBorderTypeSpinner.setSelection(0);
+			postChange();
 		default:
 			break;
 		}
@@ -335,7 +381,7 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 					Bitmap bitmap = QrcodeUtil.encode(content, width, width,
 							-1, shape, radiusPercent, level, mForegroundColor,
 							mBackgroundColor, mBackgroundBm, mFinderColor,
-							mGradientColor, mGadientType);
+							mGradientColor, mGadientType, mBorderType);
 					mQrcodeImageView.setImageBitmap(bitmap);
 				} catch (WriterException e) {
 					e.printStackTrace();
