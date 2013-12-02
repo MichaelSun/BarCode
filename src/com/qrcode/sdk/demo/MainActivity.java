@@ -15,6 +15,7 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -48,6 +49,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.zxing.WriterException;
+import com.google.zxing.client.result.ParsedResult;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.qrcode.sdk.demo.QrcodeUtil.BORDER_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.GRADIENT_TYPE;
@@ -57,7 +59,10 @@ import com.qrcode.sdk.demo.QrcodeUtil.Shape;
 public class MainActivity extends Activity implements OnSeekBarChangeListener,
 		OnClickListener, OnCheckedChangeListener,
 		ColorPickerDialog.OnColorChangedListener, View.OnLongClickListener {
-	private static String CONTENT = "MECARD:N:Ting Sun;Email:ting.sun@dajie-inc.com;Address:Beijing Chaoyang;Phone:18612560621;;";
+	private static String MECARD_SAMPLE = "MECARD:N:Ting Sun;EMAIL:ting.sun@dajie-inc.com;ADR:Beijing Chaoyang;TEL:18612560621;;";
+	private static String VCARD_SAMPLE = "BEGIN:VCARD\nVERSION:3.0\nFN:Ting\nPHOTO;VALUE=uri:http://tp3.sinaimg.cn/1668659954/180/5679291057/1\nTEL;CELL;VOICE:18612560521\nURL:http://lzem.me\nEND:VCARD";
+	// private static String CONTENT = MECARD_SAMPLE;
+	private static String CONTENT = VCARD_SAMPLE;
 	private static int SEEKBAR_MAX = 1000;
 
 	private static final int COLOR_TYPE_FOREGROUND = 0x001;
@@ -155,6 +160,9 @@ public class MainActivity extends Activity implements OnSeekBarChangeListener,
 
 		mContentEt.setText(CONTENT);
 
+		// ParsedResult result =
+		// QrcodeUtil.decode(BitmapFactory.decodeFile("/sdcard/test/test.png"));
+		// System.out.println(result == null);
 		postChange();
 	}
 
