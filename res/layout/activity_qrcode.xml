@@ -218,7 +218,44 @@
                 android:layout_centerVertical="true"
                 android:layout_marginLeft="5dp"
                 android:layout_toRightOf="@id/finder_color_label_tv"
-                android:background="#FFFFFF" />
+                android:background="#000000" />
+
+            <TextView
+                android:id="@+id/finder_border_color_label_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="5dp"
+                android:layout_toRightOf="@id/finder_color_choose_bt"
+                android:gravity="center"
+                android:text="定位点" />
+
+            <Button
+                android:id="@+id/finder_border_color_choose_bt"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="5dp"
+                android:layout_toRightOf="@id/finder_border_color_label_tv"
+                android:background="#000000" />
+
+            <TextView
+                android:id="@+id/finder_type_label_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="5dp"
+                android:layout_toRightOf="@id/finder_border_color_choose_bt"
+                android:gravity="center"
+                android:text="样式" />
+
+            <Spinner
+                android:id="@+id/finder_type_select_sp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="5dp"
+                android:layout_toRightOf="@id/finder_type_label_tv" />
 
             <Button
                 android:id="@+id/finder_color_reset_bt"

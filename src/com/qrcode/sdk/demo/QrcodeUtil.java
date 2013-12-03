@@ -47,14 +47,19 @@ public class QrcodeUtil {
 		NONE, CIRCLE, RHOMBUS
 	}
 
+	public static enum FINDER_TYPE {
+		NONE, RIGHT_ANGLE, ROUND_CORNER, SUYA
+	}
+
 	private static final int QUIET_ZONE_SIZE = 20;
 
 	public static Bitmap encode(String contents, int width, int height,
 			int padding, Shape shape, float radiusPercent,
 			ErrorCorrectionLevel level, int foregroundColor,
 			int backgroundColor, Bitmap backgroundBm, int finderColor,
-			int gradientColor, GRADIENT_TYPE gradientType,
-			BORDER_TYPE borderType) throws WriterException {
+			int finderBorderColor, FINDER_TYPE finderType, int gradientColor,
+			GRADIENT_TYPE gradientType, BORDER_TYPE borderType)
+			throws WriterException {
 		if (TextUtils.isEmpty(contents)) {
 			throw new IllegalArgumentException("Found empty contents");
 		}
@@ -66,19 +71,23 @@ public class QrcodeUtil {
 		}
 
 		Hashtable<EncodeHintType, Object> table = new Hashtable<EncodeHintType, Object>();
-		// table.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+		table.put(EncodeHintType.CHARACTER_SET, "UTF-8");
 
 		QRCode code = Encoder.encode(contents, level, table);
-		return renderResult(code, width, height, padding < 0 ? QUIET_ZONE_SIZE
-				: padding, shape, radiusPercent, foregroundColor,
-				backgroundColor, backgroundBm, finderColor, gradientColor,
-				gradientType, borderType);
+		Bitmap bitmap = renderResult(code, width, height,
+				padding < 0 ? QUIET_ZONE_SIZE : padding, shape, radiusPercent,
+				foregroundColor, backgroundColor, backgroundBm, finderColor,
+				finderBorderColor, finderType, gradientColor, gradientType,
+				borderType);
+		// boolean canDecode = DecodeUtils.checkDecode(bitmap, contents);
+		return bitmap;
 	}
 
 	private static Bitmap renderResult(QRCode code, int width, int height,
 			int quietZone, Shape shape, float radiusPercent,
 			int foregroundColor, int backgroundColor, Bitmap backgroundBm,
-			int finderColor, int gradientColor, GRADIENT_TYPE gradientType,
+			int finderColor, int findBorderColor, FINDER_TYPE finderType,
+			int gradientColor, GRADIENT_TYPE gradientType,
 			BORDER_TYPE borderType) {
 		ByteMatrix input = code.getMatrix();
 		if (input == null) {
@@ -136,9 +145,14 @@ public class QrcodeUtil {
 				int inputY = Math.round((outputY - insideRect.top) / multiple);
 
 				// FinderPatterns
-				if (isFinderPatterns(input, inputX, inputY)) {
-					paint.setColor(finderColor);
+				if (inFinderPattern(input, inputX, inputY)) {
+					if (isFinderPoint(input, inputX, inputY)) {
+						paint.setColor(finderColor);
+					} else {
+						paint.setColor(findBorderColor);
+					}
 				} else {
+					roundRadius = (int) (radiusPercent * multiple);
 					if (gradientColor != foregroundColor) {
 						// 渐变色
 						float radio = 0f;
@@ -230,7 +244,7 @@ public class QrcodeUtil {
 				}
 			}
 		}
-		
+
 		return bitmap;
 	}
 
@@ -387,17 +401,28 @@ public class QrcodeUtil {
 		return Color.argb(a3, r3, g3, b3);
 	}
 
-	private static boolean isFinderPatterns(ByteMatrix matrix, int row,
+	private static boolean isFinderPoint(ByteMatrix matrix, int row, int column) {
+		if (row >= 2 && row <= 4 && column >= 2 && column <= 4)
+			return true;
+		if (row >= 2 && row <= 4 && column >= matrix.getHeight() - 5
+				&& column <= matrix.getHeight() - 3)
+			return true;
+		if (column >= 2 && column <= 4 && row >= matrix.getWidth() - 5
+				&& row <= matrix.getWidth() - 3)
+			return true;
+		return false;
+	}
+
+	private static boolean inFinderPattern(ByteMatrix matrix, int row,
 			int column) {
 		if (row >= 0 && row <= 6 && column >= 0 && column <= 6)
 			return true;
 		if (row >= 0 && row <= 6 && column >= matrix.getHeight() - 7
 				&& column <= matrix.getHeight() - 1)
 			return true;
-		if (column >= 0 && column <= 6 && row >= matrix.getWidth() - 7
-				&& row <= matrix.getWidth() - 1)
+		if (row >= matrix.getWidth() - 7 && row <= matrix.getWidth() - 1
+				&& column >= 0 && column <= 6)
 			return true;
 		return false;
 	}
-
 }

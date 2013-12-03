@@ -5,9 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Locale;
 
 import android.annotation.SuppressLint;
@@ -49,6 +47,7 @@ import android.widget.Toast;
 import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.qrcode.sdk.demo.QrcodeUtil.BORDER_TYPE;
+import com.qrcode.sdk.demo.QrcodeUtil.FINDER_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.GRADIENT_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.Shape;
 
@@ -66,6 +65,7 @@ public class QrcodeActivity extends Activity implements
 	private static final int COLOR_TYPE_BACKGROUND = 0x002;
 	private static final int COLOR_TYPE_GRADIENT = 0x003;
 	private static final int COLOR_TYPE_FINDER = 0x004;
+	private static final int COLOR_TYPE_FINDER_BORDER = 0x005;
 
 	private static final int REQUEST_LOAD_IMAGE = 1;
 
@@ -77,7 +77,6 @@ public class QrcodeActivity extends Activity implements
 	View mGradientLayout;
 	View mFinderColorLayout;
 	View mBorderLayout;
-	List<View> mMenuViews;
 
 	SeekBar mShapeBar;
 	Button mResetShapeBt;
@@ -90,6 +89,8 @@ public class QrcodeActivity extends Activity implements
 	Button mResetGradientColorBt;
 	Spinner mGradientTypeSpinner;
 	Button mFinderColorChooseBt;
+	Button mFinderBorderColorChooseBt;
+	Spinner mFinderTypeSpinner;
 	Button mResetFinderColorBt;
 	Spinner mBorderTypeSpinner;
 	Button mResetBorderBt;
@@ -103,6 +104,8 @@ public class QrcodeActivity extends Activity implements
 	int mGradientColor = Color.BLACK;
 	GRADIENT_TYPE mGadientType = GRADIENT_TYPE.ROUND;
 	int mFinderColor = Color.BLACK;
+	int mFinderBorderColor = Color.BLACK;
+	FINDER_TYPE mFinderType = FINDER_TYPE.RIGHT_ANGLE;
 	BORDER_TYPE mBorderType = BORDER_TYPE.NONE;
 
 	@Override
@@ -116,19 +119,12 @@ public class QrcodeActivity extends Activity implements
 
 		width = getResources().getDisplayMetrics().widthPixels;
 
-		mMenuViews = new ArrayList<View>();
 		mShapeLayout = findViewById(R.id.shape_rl);
 		mLevelLayout = findViewById(R.id.ec_level_rl);
 		mColorLayout = findViewById(R.id.color_rl);
 		mGradientLayout = findViewById(R.id.gradient_color_rl);
 		mFinderColorLayout = findViewById(R.id.finder_color_rl);
 		mBorderLayout = findViewById(R.id.border_rl);
-		mMenuViews.add(mShapeLayout);
-		mMenuViews.add(mLevelLayout);
-		mMenuViews.add(mColorLayout);
-		mMenuViews.add(mGradientLayout);
-		mMenuViews.add(mFinderColorLayout);
-		mMenuViews.add(mBorderLayout);
 
 		mQrcodeImageView = (ImageView) findViewById(R.id.qrcode_img_iv);
 
@@ -143,14 +139,16 @@ public class QrcodeActivity extends Activity implements
 		mResetGradientColorBt = (Button) findViewById(R.id.gradient_color_reset_bt);
 		initGradientSpinner();
 		mFinderColorChooseBt = (Button) findViewById(R.id.finder_color_choose_bt);
+		mFinderBorderColorChooseBt = (Button) findViewById(R.id.finder_border_color_choose_bt);
+		initFinderSpinner();
 		mResetFinderColorBt = (Button) findViewById(R.id.finder_color_reset_bt);
 		initBorderSpinner();
 		mResetBorderBt = (Button) findViewById(R.id.border_reset_bt);
 
-		mShapeBar.setOnSeekBarChangeListener(this);
 		mResetShapeBt.setOnClickListener(this);
 		mShapeBar.setMax(SEEKBAR_MAX);
 		mShapeBar.setProgress(SEEKBAR_MAX / 2);
+		mShapeBar.setOnSeekBarChangeListener(this);
 		mEcLevelRg.setOnCheckedChangeListener(this);
 		mForegroundColorChooseBt.setOnClickListener(this);
 		mBackgroundColorChooseBt.setOnClickListener(this);
@@ -162,6 +160,7 @@ public class QrcodeActivity extends Activity implements
 		mGradientColorChooseBt.setOnClickListener(this);
 		mResetGradientColorBt.setOnClickListener(this);
 		mFinderColorChooseBt.setOnClickListener(this);
+		mFinderBorderColorChooseBt.setOnClickListener(this);
 		mResetFinderColorBt.setOnClickListener(this);
 		mResetBorderBt.setOnClickListener(this);
 
@@ -240,6 +239,43 @@ public class QrcodeActivity extends Activity implements
 							break;
 						case 2:
 							mBorderType = BORDER_TYPE.RHOMBUS;
+							break;
+						}
+						postChange();
+					}
+
+					@Override
+					public void onNothingSelected(AdapterView<?> arg0) {
+
+					}
+				});
+	}
+
+	private void initFinderSpinner() {
+		mFinderTypeSpinner = (Spinner) findViewById(R.id.finder_type_select_sp);
+		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+				this, R.array.finder_type_array,
+				android.R.layout.simple_spinner_item);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		mFinderTypeSpinner.setAdapter(adapter);
+
+		mFinderTypeSpinner
+				.setOnItemSelectedListener(new OnItemSelectedListener() {
+					@Override
+					public void onItemSelected(AdapterView<?> arg0, View arg1,
+							int arg2, long arg3) {
+						switch (arg2) {
+						case 0:
+							mFinderType = FINDER_TYPE.NONE;
+							break;
+						case 1:
+							mFinderType = FINDER_TYPE.RIGHT_ANGLE;
+							break;
+						case 2:
+							mFinderType = FINDER_TYPE.ROUND_CORNER;
+							break;
+						case 3:
+							mFinderType = FINDER_TYPE.SUYA;
 							break;
 						}
 						postChange();
@@ -392,9 +428,17 @@ public class QrcodeActivity extends Activity implements
 			new ColorPickerDialog(this, this, mFinderColor, COLOR_TYPE_FINDER)
 					.show();
 			break;
+		case R.id.finder_border_color_choose_bt:
+			new ColorPickerDialog(this, this, mFinderColor,
+					COLOR_TYPE_FINDER_BORDER).show();
+			break;
 		case R.id.finder_color_reset_bt:
 			mFinderColor = mForegroundColor;
+			mFinderBorderColor = mForegroundColor;
 			mFinderColorChooseBt.setBackgroundColor(mFinderColor);
+			mFinderBorderColorChooseBt.setBackgroundColor(mFinderBorderColor);
+			mFinderType = FINDER_TYPE.RIGHT_ANGLE;
+			mFinderTypeSpinner.setSelection(0);
 			postChange();
 			break;
 		case R.id.border_reset_bt:
@@ -408,7 +452,7 @@ public class QrcodeActivity extends Activity implements
 	}
 
 	private void postChange() {
-		mHandler.postDelayed(new Runnable() {
+		mHandler.post(new Runnable() {
 			@Override
 			public void run() {
 				try {
@@ -430,14 +474,14 @@ public class QrcodeActivity extends Activity implements
 					Bitmap bitmap = QrcodeUtil.encode(mContent, width * 4 / 5,
 							width * 4 / 5, -1, shape, radiusPercent, level,
 							mForegroundColor, mBackgroundColor, mBackgroundBm,
-							mFinderColor, mGradientColor, mGadientType,
-							mBorderType);
+							mFinderColor, mFinderBorderColor, mFinderType,
+							mGradientColor, mGadientType, mBorderType);
 					mQrcodeImageView.setImageBitmap(bitmap);
 				} catch (WriterException e) {
 					e.printStackTrace();
 				}
 			}
-		}, 1000);
+		});
 	}
 
 	@Override
@@ -485,6 +529,10 @@ public class QrcodeActivity extends Activity implements
 		case COLOR_TYPE_FINDER:
 			mFinderColor = color;
 			mFinderColorChooseBt.setBackgroundColor(color);
+			break;
+		case COLOR_TYPE_FINDER_BORDER:
+			mFinderBorderColor = color;
+			mFinderBorderColorChooseBt.setBackgroundColor(color);
 			break;
 		default:
 			break;
