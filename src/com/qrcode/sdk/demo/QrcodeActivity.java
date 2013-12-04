@@ -345,8 +345,43 @@ public class QrcodeActivity extends Activity implements
 			mFinderColorLayout.setVisibility(View.GONE);
 			mBorderLayout.setVisibility(View.VISIBLE);
 			return true;
+		case R.id.action_angry_bird:
+			encodeAngryBird();
+			return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	private void encodeAngryBird() {
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Bitmap bar1 = BitmapFactory.decodeResource(getResources(),
+							R.drawable.bar1);
+					Bitmap vbar2 = BitmapFactory.decodeResource(getResources(),
+							R.drawable.vbar2);
+					Bitmap hbar2 = BitmapFactory.decodeResource(getResources(),
+							R.drawable.hbar2);
+					Bitmap bird = BitmapFactory.decodeResource(getResources(),
+							R.drawable.bird);
+					Bitmap finder = BitmapFactory.decodeResource(
+							getResources(), R.drawable.finder);
+					final Bitmap bitmap = QrcodeUtil.encodeAngryBird(mContent,
+							width * 3 / 5, width * 3 / 5, 10, getEcLevel(),
+							bar1, hbar2, vbar2, bird, finder, null);
+					mHandler.post(new Runnable() {
+						@Override
+						public void run() {
+							mQrcodeImageView.setImageBitmap(bitmap);
+						}
+					});
+				} catch (WriterException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+
 	}
 
 	public boolean saveBitmapToFile(String savePath, Bitmap bitmap) {
@@ -452,7 +487,7 @@ public class QrcodeActivity extends Activity implements
 	}
 
 	private void postChange() {
-		mHandler.post(new Runnable() {
+		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
@@ -471,17 +506,23 @@ public class QrcodeActivity extends Activity implements
 						// 液化半径上限为0.7
 						radiusPercent *= 0.7;
 					}
-					Bitmap bitmap = QrcodeUtil.encode(mContent, width * 4 / 5,
-							width * 4 / 5, -1, shape, radiusPercent, level,
-							mForegroundColor, mBackgroundColor, mBackgroundBm,
-							mFinderColor, mFinderBorderColor, mFinderType,
-							mGradientColor, mGadientType, mBorderType);
-					mQrcodeImageView.setImageBitmap(bitmap);
+					final Bitmap bitmap = QrcodeUtil.encode(mContent,
+							width * 3 / 5, width * 3 / 5, -1, shape,
+							radiusPercent, level, mForegroundColor,
+							mBackgroundColor, mBackgroundBm, mFinderColor,
+							mFinderBorderColor, mFinderType, mGradientColor,
+							mGadientType, mBorderType);
+					mHandler.post(new Runnable() {
+						@Override
+						public void run() {
+							mQrcodeImageView.setImageBitmap(bitmap);
+						}
+					});
 				} catch (WriterException e) {
 					e.printStackTrace();
 				}
 			}
-		});
+		}).start();
 	}
 
 	@Override

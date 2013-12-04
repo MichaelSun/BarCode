@@ -3,32 +3,37 @@
     <item
         android:id="@+id/action_shape"
         android:orderInCategory="100"
-        android:showAsAction="always"
+        android:showAsAction="ifRoom"
         android:title="形态"/>
     <item
         android:id="@+id/action_level"
         android:orderInCategory="100"
-        android:showAsAction="always"
+        android:showAsAction="ifRoom"
         android:title="容错率"/>
     <item
         android:id="@+id/action_color"
         android:orderInCategory="100"
-        android:showAsAction="always"
+        android:showAsAction="ifRoom"
         android:title="颜色"/>
     <item
         android:id="@+id/action_gradient"
         android:orderInCategory="100"
-        android:showAsAction="always"
+        android:showAsAction="ifRoom"
         android:title="渐变"/>
     <item
         android:id="@+id/action_finder"
         android:orderInCategory="100"
-        android:showAsAction="always"
+        android:showAsAction="ifRoom"
         android:title="定位点"/>
     <item
         android:id="@+id/action_broder"
         android:orderInCategory="100"
-        android:showAsAction="always"
+        android:showAsAction="ifRoom"
         android:title="边框"/>
+    <item
+        android:id="@+id/action_angry_bird"
+        android:orderInCategory="100"
+        android:showAsAction="ifRoom"
+        android:title="愤怒的小鸟"/>
 
 </menu>

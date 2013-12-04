@@ -51,7 +51,7 @@ public class QrcodeUtil {
 		NONE, RIGHT_ANGLE, ROUND_CORNER, SUYA
 	}
 
-	private static final int QUIET_ZONE_SIZE = 20;
+	private static final int QUIET_ZONE_SIZE = 10;
 
 	public static Bitmap encode(String contents, int width, int height,
 			int padding, Shape shape, float radiusPercent,
@@ -71,7 +71,7 @@ public class QrcodeUtil {
 		}
 
 		Hashtable<EncodeHintType, Object> table = new Hashtable<EncodeHintType, Object>();
-		table.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+		// table.put(EncodeHintType.CHARACTER_SET, "UTF-8");
 
 		QRCode code = Encoder.encode(contents, level, table);
 		Bitmap bitmap = renderResult(code, width, height,
@@ -240,6 +240,134 @@ public class QrcodeUtil {
 									4);
 						}
 
+					}
+				}
+			}
+		}
+
+		return bitmap;
+	}
+
+	public static Bitmap encodeAngryBird(String contents, int width,
+			int height, int padding, ErrorCorrectionLevel level, Bitmap bar1,
+			Bitmap hbar2, Bitmap vbar2, Bitmap bird, Bitmap finder,
+			Bitmap background) throws WriterException {
+		if (TextUtils.isEmpty(contents)) {
+			throw new IllegalArgumentException("Found empty contents");
+		}
+
+		if (width < 0 || height < 0) {
+			throw new IllegalArgumentException(
+					"Requested dimensions are too small: " + width + 'x'
+							+ height);
+		}
+
+		Hashtable<EncodeHintType, Object> table = new Hashtable<EncodeHintType, Object>();
+		// table.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+
+		QRCode code = Encoder.encode(contents, level, table);
+		ByteMatrix input = code.getMatrix();
+		if (input == null) {
+			throw new IllegalStateException();
+		}
+
+		int inputWidth = input.getWidth();
+		int inputHeight = input.getHeight();
+		int outputWidth = Math.max(width, inputWidth);
+		int outputHeight = Math.max(height, inputHeight);
+
+		Bitmap bitmap = Bitmap.createBitmap(outputWidth, outputHeight,
+				Config.ARGB_8888);
+		bitmap.eraseColor(255);
+		Canvas canvas = new Canvas(bitmap);
+		Paint paint = new Paint();
+		paint.setAntiAlias(true);
+		paint.setStyle(Style.FILL);
+
+		float multiple = Math.min((float) (outputWidth - 2 * padding)
+				/ inputWidth, (float) (outputHeight - 2 * padding)
+				/ inputHeight);
+
+		// draw background
+		if (background != null) {
+			Rect src = new Rect(0, 0, background.getWidth(),
+					background.getHeight());
+			Rect dst = new Rect(0, 0, outputWidth, outputHeight);
+			canvas.drawBitmap(background, src, dst, paint);
+		} else {
+			canvas.drawColor(Color.WHITE);
+		}
+
+		// draw finder
+		if (finder != null) {
+			Rect src = new Rect(0, 0, finder.getWidth(), finder.getHeight());
+			RectF dst = new RectF(padding, padding, padding + 7 * multiple,
+					padding + 7 * multiple);
+			canvas.drawBitmap(finder, src, dst, paint);
+			dst.set(padding + multiple * (inputWidth - 7), padding, padding
+					+ multiple * inputWidth, padding + multiple * 7);
+			canvas.drawBitmap(finder, src, dst, paint);
+			dst.set(padding, padding + multiple * (inputHeight - 7), padding
+					+ multiple * 7, padding + multiple * inputHeight);
+			canvas.drawBitmap(finder, src, dst, paint);
+		}
+
+		// draw bar
+		boolean[][] drawn = new boolean[inputWidth][inputHeight];
+		Rect src = new Rect();
+		RectF dst = new RectF();
+		for (int inputY = 0; inputY < inputHeight; inputY++) {
+			for (int inputX = 0; inputX < inputWidth; inputX++) {
+				float outputX = padding + inputX * multiple;
+				float outputY = padding + inputY * multiple;
+
+				if (inFinderPattern(input, inputX, inputY)) {
+					continue;
+				} else {
+					if (isSet(input, inputX, inputY)) {
+						if (drawn[inputX][inputY]) {
+							continue;
+						} else {
+							if (inputX + 1 < inputWidth
+									&& inputY + 1 < inputHeight
+									&& isSet(input, inputX + 1, inputY)
+									&& isSet(input, inputX, inputY + 1)
+									&& isSet(input, inputX + 1, inputY + 1)
+									&& !drawn[inputX + 1][inputY]) {
+								src.set(0, 0, bird.getWidth(), bird.getHeight());
+								dst.set(outputX, outputY, outputX + 2
+										* multiple, outputY + 2 * multiple);
+								canvas.drawBitmap(bird, src, dst, paint);
+								drawn[inputX][inputY] = true;
+								drawn[inputX + 1][inputY] = true;
+								drawn[inputX][inputY + 1] = true;
+								drawn[inputX + 1][inputY + 1] = true;
+							} else if (inputX + 1 < inputWidth
+									&& isSet(input, inputX + 1, inputY)
+									&& !drawn[inputX + 1][inputY]) {
+								drawn[inputX + 1][inputY] = true;
+								src.set(0, 0, hbar2.getWidth(),
+										hbar2.getHeight());
+								dst.set(outputX, outputY, outputX + 2
+										* multiple, outputY + multiple);
+								canvas.drawBitmap(hbar2, src, dst, paint);
+							} else if (inputY + 1 < inputHeight
+									&& isSet(input, inputX, inputY + 1)
+									&& !drawn[inputX][inputY + 1]) {
+								drawn[inputX][inputY + 1] = true;
+								src.set(0, 0, vbar2.getWidth(),
+										vbar2.getHeight());
+								dst.set(outputX, outputY, outputX + multiple,
+										outputY + 2 * multiple);
+								canvas.drawBitmap(vbar2, src, dst, paint);
+							} else {
+								src.set(0, 0, bar1.getWidth(), bar1.getHeight());
+								dst.set(outputX, outputY, outputX + multiple,
+										outputY + multiple);
+								canvas.drawBitmap(bar1, src, dst, paint);
+							}
+							drawn[inputX][inputY] = true;
+						}
 					}
 				}
 			}
