@@ -557,4 +557,145 @@ public class QRCodeGenerator {
 				options.outComposeType, (int) leftPadding, (int) topPadding,
 				options.outBackgroundColor);
 	}
+
+	public Bitmap generateAngryBird(AngryBirdOptions options)
+			throws WriterException {
+		if (options == null) {
+			options = new AngryBirdOptions();
+		}
+
+		if (mQRCode == null) {
+			if (TextUtils.isEmpty(mContent)) {
+				throw new WriterException("Content is empty.");
+			}
+
+			mQRCode = Encoder.encode(mContent, options.outErrorCorrectionLevel);
+			if (mQRCode == null) {
+				return null;
+			}
+		}
+
+		int width = options.outWidth;
+		int height = options.outHeight;
+
+		ByteMatrix input = mQRCode.getMatrix();
+		if (input == null) {
+			throw new IllegalStateException();
+		}
+		int inputWidth = input.getWidth();
+		int inputHeight = input.getHeight();
+		int qrWidth = inputWidth + (options.outPadding << 1);
+		int qrHeight = inputHeight + (options.outPadding << 1);
+
+		int outputWidth = Math.max(width, qrWidth);
+		int outputHeight = Math.max(height, qrHeight);
+
+		float multiple = Math.min(outputWidth / (float) qrWidth, outputHeight
+				/ (float) qrHeight);
+		float leftPadding = (outputWidth - inputWidth * multiple) / 2;
+		float topPadding = (outputHeight - inputHeight * multiple) / 2;
+
+		Bitmap bitmap = Bitmap.createBitmap(outputWidth, outputHeight,
+				Config.ARGB_8888);
+		Canvas canvas = new Canvas(bitmap);
+		Paint paint = new Paint();
+		paint.setAntiAlias(true);
+		paint.setStyle(Style.FILL);
+
+		// draw background
+		if (options.background != null) {
+			Rect src = new Rect(0, 0, options.background.getWidth(),
+					options.background.getHeight());
+			Rect dst = new Rect(0, 0, outputWidth, outputHeight);
+			canvas.drawBitmap(options.background, src, dst, paint);
+		} else {
+			canvas.drawColor(AngryBirdOptions.DEFAULT_BACKGROUND_COLOR);
+		}
+
+		// draw finder
+		if (options.finder != null) {
+			Rect src = new Rect(0, 0, options.finder.getWidth(),
+					options.finder.getHeight());
+			RectF dst = new RectF(leftPadding, topPadding, leftPadding + 7
+					* multiple, topPadding + 7 * multiple);
+			canvas.drawBitmap(options.finder, src, dst, paint);
+			dst.set(leftPadding + multiple * (inputWidth - 7), topPadding,
+					leftPadding + multiple * inputWidth, topPadding + multiple
+							* 7);
+			canvas.drawBitmap(options.finder, src, dst, paint);
+			dst.set(leftPadding, topPadding + multiple * (inputHeight - 7),
+					leftPadding + multiple * 7, topPadding + multiple
+							* inputHeight);
+			canvas.drawBitmap(options.finder, src, dst, paint);
+		}
+
+		// draw bar
+		boolean[][] drawn = new boolean[inputWidth][inputHeight];
+		Rect src = new Rect();
+		RectF dst = new RectF();
+		for (int inputY = 0; inputY < inputHeight; inputY++) {
+			for (int inputX = 0; inputX < inputWidth; inputX++) {
+				float outputX = leftPadding + inputX * multiple;
+				float outputY = topPadding + inputY * multiple;
+
+				if (isFinderPatterns(input, inputX, inputY)) {
+					continue;
+				} else {
+					if (isSet(input, inputX, inputY)) {
+						if (drawn[inputX][inputY]) {
+							continue;
+						} else {
+							if (options.bird != null && inputX + 1 < inputWidth
+									&& inputY + 1 < inputHeight
+									&& isSet(input, inputX + 1, inputY)
+									&& isSet(input, inputX, inputY + 1)
+									&& isSet(input, inputX + 1, inputY + 1)
+									&& !drawn[inputX + 1][inputY]) {
+								src.set(0, 0, options.bird.getWidth(),
+										options.bird.getHeight());
+								dst.set(outputX, outputY, outputX + 2
+										* multiple, outputY + 2 * multiple);
+								canvas.drawBitmap(options.bird, src, dst, paint);
+								drawn[inputX][inputY] = true;
+								drawn[inputX + 1][inputY] = true;
+								drawn[inputX][inputY + 1] = true;
+								drawn[inputX + 1][inputY + 1] = true;
+							} else if (options.hbar2 != null
+									&& inputX + 1 < inputWidth
+									&& isSet(input, inputX + 1, inputY)
+									&& !drawn[inputX + 1][inputY]) {
+								drawn[inputX + 1][inputY] = true;
+								src.set(0, 0, options.hbar2.getWidth(),
+										options.hbar2.getHeight());
+								dst.set(outputX, outputY, outputX + 2
+										* multiple, outputY + multiple);
+								canvas.drawBitmap(options.hbar2, src, dst,
+										paint);
+							} else if (options.vbar2 != null
+									&& inputY + 1 < inputHeight
+									&& isSet(input, inputX, inputY + 1)
+									&& !drawn[inputX][inputY + 1]) {
+								drawn[inputX][inputY + 1] = true;
+								src.set(0, 0, options.vbar2.getWidth(),
+										options.vbar2.getHeight());
+								dst.set(outputX, outputY, outputX + multiple,
+										outputY + 2 * multiple);
+								canvas.drawBitmap(options.vbar2, src, dst,
+										paint);
+							} else if (options.bar1 != null) {
+								src.set(0, 0, options.bar1.getWidth(),
+										options.bar1.getHeight());
+								dst.set(outputX, outputY, outputX + multiple,
+										outputY + multiple);
+								canvas.drawBitmap(options.bar1, src, dst, paint);
+							}
+							drawn[inputX][inputY] = true;
+						}
+					}
+				}
+			}
+		}
+
+		return bitmap;
+	}
 }

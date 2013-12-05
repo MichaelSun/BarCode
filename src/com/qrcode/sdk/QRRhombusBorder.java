@@ -22,7 +22,7 @@ public class QRRhombusBorder extends QRBorder {
 	}
 
 	@Override
-	protected Path getClipPath() {
+	public Path getClipPath() {
 		Path path = new Path();
 		path.moveTo(mLeftPadding, mHeight >> 1);
 		path.lineTo(mWidth >> 1, mTopPadding);

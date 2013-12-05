@@ -46,6 +46,6 @@ public abstract class QRBorder {
 		return mBoxSize;
 	}
 
-	protected abstract Path getClipPath();
+	public abstract Path getClipPath();
 
 }

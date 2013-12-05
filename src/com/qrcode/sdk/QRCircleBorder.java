@@ -28,7 +28,7 @@ public class QRCircleBorder extends QRBorder {
 	}
 
 	@Override
-	protected Path getClipPath() {
+	public Path getClipPath() {
 		Path path = new Path();
 		path.addCircle(mWidth / 2.0f, mHeight / 2.0f, mDiameter / 2.0f,
 				Direction.CCW);

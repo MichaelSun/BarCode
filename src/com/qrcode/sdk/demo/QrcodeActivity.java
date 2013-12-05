@@ -47,6 +47,7 @@ import android.widget.Toast;
 
 import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.qrcode.sdk.AngryBirdOptions;
 import com.qrcode.sdk.QRCodeGenerator;
 import com.qrcode.sdk.QRCodeOptions;
 import com.qrcode.sdk.QRCodeOptions.BorderType;
@@ -105,6 +106,7 @@ public class QrcodeActivity extends Activity implements
 
 	QRCodeGenerator mQRCodeGenerator;
 	QRCodeOptions mOptions = new QRCodeOptions();
+	AngryBirdOptions mAngryBirdOptions = new AngryBirdOptions();
 
 	int width;
 	int mForegroundColor = Color.BLACK;
@@ -131,6 +133,24 @@ public class QrcodeActivity extends Activity implements
 		width = getResources().getDisplayMetrics().widthPixels;
 		mOptions.outWidth = width * 4 / 5;
 		mOptions.outHeight = width * 4 / 5;
+
+		Bitmap bar1 = BitmapFactory.decodeResource(getResources(),
+				R.drawable.bar1);
+		Bitmap vbar2 = BitmapFactory.decodeResource(getResources(),
+				R.drawable.vbar2);
+		Bitmap hbar2 = BitmapFactory.decodeResource(getResources(),
+				R.drawable.hbar2);
+		Bitmap bird = BitmapFactory.decodeResource(getResources(),
+				R.drawable.bird);
+		Bitmap finder = BitmapFactory.decodeResource(getResources(),
+				R.drawable.finder);
+		mAngryBirdOptions.outWidth = width * 4 / 5;
+		mAngryBirdOptions.outHeight = width * 4 / 5;
+		mAngryBirdOptions.bar1 = bar1;
+		mAngryBirdOptions.vbar2 = vbar2;
+		mAngryBirdOptions.hbar2 = hbar2;
+		mAngryBirdOptions.bird = bird;
+		mAngryBirdOptions.finder = finder;
 
 		mShapeLayout = findViewById(R.id.shape_rl);
 		mLevelLayout = findViewById(R.id.ec_level_rl);
@@ -188,7 +208,7 @@ public class QrcodeActivity extends Activity implements
 		// System.out.println(result == null);
 		postChange();
 	}
-	
+
 	private void initBackgroundComposeSpinner() {
 		mBackgroundComposeSp = (Spinner) findViewById(R.id.background_image_compose_sp);
 		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
@@ -402,8 +422,32 @@ public class QrcodeActivity extends Activity implements
 			mFinderColorLayout.setVisibility(View.GONE);
 			mBorderLayout.setVisibility(View.VISIBLE);
 			return true;
+		case R.id.action_angry_bird:
+			generateAngryBird();
+			return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	private void generateAngryBird() {
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					final Bitmap bitmap = mQRCodeGenerator
+							.generateAngryBird(mAngryBirdOptions);
+					mHandler.post(new Runnable() {
+						@Override
+						public void run() {
+							mQrcodeImageView.setImageBitmap(bitmap);
+						}
+					});
+				} catch (WriterException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+
 	}
 
 	public boolean saveBitmapToFile(String savePath, Bitmap bitmap) {
@@ -529,7 +573,7 @@ public class QrcodeActivity extends Activity implements
 	}
 
 	private void postChange() {
-		mHandler.post(new Runnable() {
+		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
@@ -556,13 +600,18 @@ public class QrcodeActivity extends Activity implements
 					// mFinderColor, mFinderBorderColor, mFinderType,
 					// mGradientColor, mGadientType, mBorderType);
 
-					Bitmap bitmap = mQRCodeGenerator.generate(mOptions);
-					mQrcodeImageView.setImageBitmap(bitmap);
+					final Bitmap bitmap = mQRCodeGenerator.generate(mOptions);
+					mHandler.post(new Runnable() {
+						@Override
+						public void run() {
+							mQrcodeImageView.setImageBitmap(bitmap);
+						}
+					});
 				} catch (WriterException e) {
 					e.printStackTrace();
 				}
 			}
-		});
+		}).start();
 	}
 
 	@Override
