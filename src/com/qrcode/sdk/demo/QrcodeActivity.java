@@ -53,6 +53,7 @@ import com.qrcode.sdk.QRCodeOptions;
 import com.qrcode.sdk.QRCodeOptions.BorderType;
 import com.qrcode.sdk.QRCodeOptions.ComposeType;
 import com.qrcode.sdk.QRCodeOptions.GradientType;
+import com.qrcode.sdk.QRCodeOptions.Shape;
 import com.qrcode.sdk.demo.QrcodeUtil.BORDER_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.FINDER_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.GRADIENT_TYPE;
@@ -101,6 +102,11 @@ public class QrcodeActivity extends Activity implements
 	Button mResetFinderColorBt;
 	Spinner mBorderTypeSpinner;
 	Button mResetBorderBt;
+
+	Button mTemplate1Bt;
+	Button mTemplate2Bt;
+	Button mTemplate3Bt;
+	Button mTemplate4Bt;
 
 	Handler mHandler = new Handler();
 
@@ -179,6 +185,11 @@ public class QrcodeActivity extends Activity implements
 		initBorderSpinner();
 		mResetBorderBt = (Button) findViewById(R.id.border_reset_bt);
 
+		mTemplate1Bt = (Button) findViewById(R.id.template_1);
+		mTemplate2Bt = (Button) findViewById(R.id.template_2);
+		mTemplate3Bt = (Button) findViewById(R.id.template_3);
+		mTemplate4Bt = (Button) findViewById(R.id.template_4);
+
 		mResetShapeBt.setOnClickListener(this);
 		mShapeBar.setMax(SEEKBAR_MAX);
 		mShapeBar.setProgress(SEEKBAR_MAX / 2);
@@ -197,6 +208,11 @@ public class QrcodeActivity extends Activity implements
 		mFinderBorderColorChooseBt.setOnClickListener(this);
 		mResetFinderColorBt.setOnClickListener(this);
 		mResetBorderBt.setOnClickListener(this);
+
+		mTemplate1Bt.setOnClickListener(this);
+		mTemplate2Bt.setOnClickListener(this);
+		mTemplate3Bt.setOnClickListener(this);
+		mTemplate4Bt.setOnClickListener(this);
 
 		mForegroundColorChooseBt.setBackgroundColor(mForegroundColor);
 		mBackgroundColorChooseBt.setBackgroundColor(mBackgroundColor);
@@ -422,14 +438,67 @@ public class QrcodeActivity extends Activity implements
 			mFinderColorLayout.setVisibility(View.GONE);
 			mBorderLayout.setVisibility(View.VISIBLE);
 			return true;
-		case R.id.action_angry_bird:
-			generateAngryBird();
-			return true;
 		}
 		return super.onOptionsItemSelected(item);
 	}
 
-	private void generateAngryBird() {
+	private void template1() {
+		final QRCodeOptions options = new QRCodeOptions();
+		options.outWidth = width * 4 / 5;
+		options.outHeight = width * 4 / 5;
+		options.outBackgroundColor = Color.WHITE;
+		options.outForegroundColor = -16318209;
+		options.outGradientColor = -65528;
+		options.outGradientType = GradientType.BACKSLASH;
+		options.outBorderType = BorderType.ROUND;
+		options.outShape = Shape.WATER;
+		options.outRadiuspercent = 0.7f;
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					final Bitmap bitmap = mQRCodeGenerator.generate(options);
+					mHandler.post(new Runnable() {
+						@Override
+						public void run() {
+							mQrcodeImageView.setImageBitmap(bitmap);
+						}
+					});
+				} catch (WriterException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+	}
+	
+	private void template2() {
+		final QRCodeOptions options = new QRCodeOptions();
+		options.outWidth = width * 4 / 5;
+		options.outHeight = width * 4 / 5;
+		options.outShape = Shape.ROUND;
+		options.outRadiuspercent = 0.5f;
+		options.outBackgroundImage = BitmapFactory.decodeResource(getResources(), R.drawable.demo_bg);
+		options.outComposeType = ComposeType.SIMPLE;
+		options.outForegroundColor = Color.BLACK;
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					final Bitmap bitmap = mQRCodeGenerator.generate(options);
+					mHandler.post(new Runnable() {
+						@Override
+						public void run() {
+							mQrcodeImageView.setImageBitmap(bitmap);
+						}
+					});
+				} catch (WriterException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+	}
+
+	private void template4() {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -566,6 +635,17 @@ public class QrcodeActivity extends Activity implements
 
 			mOptions.outBorderType = null;
 			postChange();
+			break;
+		case R.id.template_1:
+			template1();
+			break;
+		case R.id.template_2:
+			template2();
+			break;
+		case R.id.template_3:
+			break;
+		case R.id.template_4:
+			template4();
 			break;
 		default:
 			break;
@@ -812,7 +892,7 @@ public class QrcodeActivity extends Activity implements
 					mQrcodeImageView.getWidth());
 			options.inJustDecodeBounds = false;
 			mBackgroundBm = BitmapFactory.decodeFile(picturePath, options);
-
+			
 			mOptions.outBackgroundImage = mBackgroundBm;
 			((ImageButton) mBackgroundImageChooseBt)
 					.setImageBitmap(mBackgroundBm);

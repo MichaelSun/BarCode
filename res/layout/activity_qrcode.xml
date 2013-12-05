@@ -142,11 +142,11 @@
                 android:id="@+id/background_image_choose_bt"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:scaleType="fitXY"
                 android:layout_centerVertical="true"
                 android:layout_marginLeft="5dp"
-                android:layout_toRightOf="@id/background_color_choose_bt"/>
-            
+                android:layout_toRightOf="@id/background_color_choose_bt"
+                android:scaleType="fitXY" />
+
             <Spinner
                 android:id="@+id/background_image_compose_sp"
                 android:layout_width="wrap_content"
@@ -305,6 +305,45 @@
                 android:text="reset" />
         </RelativeLayout>
     </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/template_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true" >
+
+        <Button
+            android:id="@+id/template_1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:text="模板1" />
+
+        <Button
+            android:id="@+id/template_2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:text="模板2" />
+
+        <Button
+            android:id="@+id/template_3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:text="模板3" />
+
+        <Button
+            android:id="@+id/template_4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="1"
+            android:text="模板4" />
+    </LinearLayout>
 
     <ImageView
         android:id="@+id/qrcode_img_iv"

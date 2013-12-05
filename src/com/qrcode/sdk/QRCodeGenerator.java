@@ -11,7 +11,6 @@ import android.graphics.Path;
 import android.graphics.Path.Direction;
 import android.graphics.RectF;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.encoder.ByteMatrix;
