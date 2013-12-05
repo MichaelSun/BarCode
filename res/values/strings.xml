@@ -23,5 +23,10 @@
         <item>圆角</item>
         <item>素雅</item>
     </string-array>
+    <string-array name="compose_type_array">
+        <item>无</item>
+        <item>简单</item>
+        <item>一般</item>
+    </string-array>
 
 </resources>

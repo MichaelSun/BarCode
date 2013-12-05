@@ -138,14 +138,21 @@
                 android:layout_toRightOf="@id/background_color_label_tv"
                 android:background="#FFFFFF" />
 
-            <Button
+            <ImageButton
                 android:id="@+id/background_image_choose_bt"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:scaleType="fitXY"
                 android:layout_centerVertical="true"
                 android:layout_marginLeft="5dp"
-                android:layout_toRightOf="@id/background_color_choose_bt"
-                android:text="背景图" />
+                android:layout_toRightOf="@id/background_color_choose_bt"/>
+            
+            <Spinner
+                android:id="@+id/background_image_compose_sp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_toRightOf="@id/background_image_choose_bt" />
 
             <Button
                 android:id="@+id/color_reset_bt"
