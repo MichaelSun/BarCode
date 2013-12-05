@@ -15,8 +15,8 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.CompressFormat;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.ExifInterface;
@@ -36,6 +36,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.RadioGroup.OnCheckedChangeListener;
@@ -46,10 +47,15 @@ import android.widget.Toast;
 
 import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.qrcode.sdk.AngryBirdOptions;
+import com.qrcode.sdk.QRCodeGenerator;
+import com.qrcode.sdk.QRCodeOptions;
+import com.qrcode.sdk.QRCodeOptions.BorderType;
+import com.qrcode.sdk.QRCodeOptions.ComposeType;
+import com.qrcode.sdk.QRCodeOptions.GradientType;
 import com.qrcode.sdk.demo.QrcodeUtil.BORDER_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.FINDER_TYPE;
 import com.qrcode.sdk.demo.QrcodeUtil.GRADIENT_TYPE;
-import com.qrcode.sdk.demo.QrcodeUtil.Shape;
 
 @SuppressLint("DefaultLocale")
 public class QrcodeActivity extends Activity implements
@@ -84,7 +90,8 @@ public class QrcodeActivity extends Activity implements
 	Button mForegroundColorChooseBt;
 	Button mBackgroundColorChooseBt;
 	Button mResetColorBt;
-	Button mBackgroundImageChooseBt;
+	ImageButton mBackgroundImageChooseBt;
+	Spinner mBackgroundComposeSp;
 	Button mGradientColorChooseBt;
 	Button mResetGradientColorBt;
 	Spinner mGradientTypeSpinner;
@@ -96,6 +103,10 @@ public class QrcodeActivity extends Activity implements
 	Button mResetBorderBt;
 
 	Handler mHandler = new Handler();
+
+	QRCodeGenerator mQRCodeGenerator;
+	QRCodeOptions mOptions = new QRCodeOptions();
+	AngryBirdOptions mAngryBirdOptions = new AngryBirdOptions();
 
 	int width;
 	int mForegroundColor = Color.BLACK;
@@ -117,7 +128,29 @@ public class QrcodeActivity extends Activity implements
 			mContent = getIntent().getStringExtra(EXTRA_CONTENT);
 		}
 
+		mQRCodeGenerator = new QRCodeGenerator(mContent);
+
 		width = getResources().getDisplayMetrics().widthPixels;
+		mOptions.outWidth = width * 4 / 5;
+		mOptions.outHeight = width * 4 / 5;
+
+		Bitmap bar1 = BitmapFactory.decodeResource(getResources(),
+				R.drawable.bar1);
+		Bitmap vbar2 = BitmapFactory.decodeResource(getResources(),
+				R.drawable.vbar2);
+		Bitmap hbar2 = BitmapFactory.decodeResource(getResources(),
+				R.drawable.hbar2);
+		Bitmap bird = BitmapFactory.decodeResource(getResources(),
+				R.drawable.bird);
+		Bitmap finder = BitmapFactory.decodeResource(getResources(),
+				R.drawable.finder);
+		mAngryBirdOptions.outWidth = width * 4 / 5;
+		mAngryBirdOptions.outHeight = width * 4 / 5;
+		mAngryBirdOptions.bar1 = bar1;
+		mAngryBirdOptions.vbar2 = vbar2;
+		mAngryBirdOptions.hbar2 = hbar2;
+		mAngryBirdOptions.bird = bird;
+		mAngryBirdOptions.finder = finder;
 
 		mShapeLayout = findViewById(R.id.shape_rl);
 		mLevelLayout = findViewById(R.id.ec_level_rl);
@@ -134,7 +167,8 @@ public class QrcodeActivity extends Activity implements
 		mForegroundColorChooseBt = (Button) findViewById(R.id.foreground_color_choose_bt);
 		mBackgroundColorChooseBt = (Button) findViewById(R.id.background_color_choose_bt);
 		mResetColorBt = (Button) findViewById(R.id.color_reset_bt);
-		mBackgroundImageChooseBt = (Button) findViewById(R.id.background_image_choose_bt);
+		mBackgroundImageChooseBt = (ImageButton) findViewById(R.id.background_image_choose_bt);
+		initBackgroundComposeSpinner();
 		mGradientColorChooseBt = (Button) findViewById(R.id.gradient_color_choose_bt);
 		mResetGradientColorBt = (Button) findViewById(R.id.gradient_color_reset_bt);
 		initGradientSpinner();
@@ -175,6 +209,41 @@ public class QrcodeActivity extends Activity implements
 		postChange();
 	}
 
+	private void initBackgroundComposeSpinner() {
+		mBackgroundComposeSp = (Spinner) findViewById(R.id.background_image_compose_sp);
+		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
+				this, R.array.compose_type_array,
+				android.R.layout.simple_spinner_item);
+		adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		mBackgroundComposeSp.setAdapter(adapter);
+
+		mBackgroundComposeSp
+				.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+					@Override
+					public void onItemSelected(AdapterView<?> arg0, View arg1,
+							int arg2, long arg3) {
+						switch (arg2) {
+						case 0:
+							mOptions.outComposeType = null;
+							break;
+						case 1:
+							mOptions.outComposeType = ComposeType.SIMPLE;
+							break;
+						case 2:
+							mOptions.outComposeType = ComposeType.ALTERNATIVE;
+							break;
+						}
+						postChange();
+					}
+
+					@Override
+					public void onNothingSelected(AdapterView<?> arg0) {
+
+					}
+				});
+	}
+
 	private void initGradientSpinner() {
 		mGradientTypeSpinner = (Spinner) findViewById(R.id.gradient_type_select_sp);
 		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
@@ -192,18 +261,23 @@ public class QrcodeActivity extends Activity implements
 						switch (arg2) {
 						case 0:
 							mGadientType = GRADIENT_TYPE.ROUND;
+							mOptions.outGradientType = GradientType.ROUND;
 							break;
 						case 1:
 							mGadientType = GRADIENT_TYPE.SLASH;
+							mOptions.outGradientType = GradientType.SLASH;
 							break;
 						case 2:
 							mGadientType = GRADIENT_TYPE.BACKSLASH;
+							mOptions.outGradientType = GradientType.BACKSLASH;
 							break;
 						case 3:
 							mGadientType = GRADIENT_TYPE.HORIZONTAL;
+							mOptions.outGradientType = GradientType.HORIZONTAL;
 							break;
 						case 4:
 							mGadientType = GRADIENT_TYPE.VERTICAL;
+							mOptions.outGradientType = GradientType.VERTICAL;
 							break;
 						}
 						postChange();
@@ -233,12 +307,15 @@ public class QrcodeActivity extends Activity implements
 						switch (arg2) {
 						case 0:
 							mBorderType = BORDER_TYPE.NONE;
+							mOptions.outBorderType = null;
 							break;
 						case 1:
 							mBorderType = BORDER_TYPE.CIRCLE;
+							mOptions.outBorderType = BorderType.ROUND;
 							break;
 						case 2:
 							mBorderType = BORDER_TYPE.RHOMBUS;
+							mOptions.outBorderType = BorderType.RHOMBUS;
 							break;
 						}
 						postChange();
@@ -346,30 +423,19 @@ public class QrcodeActivity extends Activity implements
 			mBorderLayout.setVisibility(View.VISIBLE);
 			return true;
 		case R.id.action_angry_bird:
-			encodeAngryBird();
+			generateAngryBird();
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
 	}
 
-	private void encodeAngryBird() {
+	private void generateAngryBird() {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					Bitmap bar1 = BitmapFactory.decodeResource(getResources(),
-							R.drawable.bar1);
-					Bitmap vbar2 = BitmapFactory.decodeResource(getResources(),
-							R.drawable.vbar2);
-					Bitmap hbar2 = BitmapFactory.decodeResource(getResources(),
-							R.drawable.hbar2);
-					Bitmap bird = BitmapFactory.decodeResource(getResources(),
-							R.drawable.bird);
-					Bitmap finder = BitmapFactory.decodeResource(
-							getResources(), R.drawable.finder);
-					final Bitmap bitmap = QrcodeUtil.encodeAngryBird(mContent,
-							width * 3 / 5, width * 3 / 5, 10, getEcLevel(),
-							bar1, hbar2, vbar2, bird, finder, null);
+					final Bitmap bitmap = mQRCodeGenerator
+							.generateAngryBird(mAngryBirdOptions);
 					mHandler.post(new Runnable() {
 						@Override
 						public void run() {
@@ -406,6 +472,13 @@ public class QrcodeActivity extends Activity implements
 	@Override
 	public void onProgressChanged(SeekBar seekBar, int progress,
 			boolean fromUser) {
+		if (progress < SEEKBAR_MAX / 2) {
+			mOptions.outShape = com.qrcode.sdk.QRCodeOptions.Shape.WATER;
+		} else if (progress > SEEKBAR_MAX / 2) {
+			mOptions.outShape = com.qrcode.sdk.QRCodeOptions.Shape.ROUND;
+		}
+		mOptions.outRadiuspercent = Math.abs(SEEKBAR_MAX - progress * 2)
+				/ (float) SEEKBAR_MAX;
 		postChange();
 	}
 
@@ -445,6 +518,11 @@ public class QrcodeActivity extends Activity implements
 				mBackgroundBm.recycle();
 			}
 			mBackgroundBm = null;
+			mBackgroundImageChooseBt.setImageBitmap(null);
+
+			mOptions.outBackgroundColor = QRCodeOptions.DEFAULT_BACKGROUND_COLOR;
+			mOptions.outForegroundColor = QRCodeOptions.DEFAULT_FOREGROUND_COLOR;
+			mOptions.outBackgroundImage = null;
 			postChange();
 			break;
 		case R.id.background_image_choose_bt:
@@ -457,6 +535,8 @@ public class QrcodeActivity extends Activity implements
 		case R.id.gradient_color_reset_bt:
 			mGradientColor = mForegroundColor;
 			mGradientColorChooseBt.setBackgroundColor(mGradientColor);
+
+			mOptions.outGradientColor = QRCodeOptions.COLOR_UNSET;
 			postChange();
 			break;
 		case R.id.finder_color_choose_bt:
@@ -474,11 +554,17 @@ public class QrcodeActivity extends Activity implements
 			mFinderBorderColorChooseBt.setBackgroundColor(mFinderBorderColor);
 			mFinderType = FINDER_TYPE.RIGHT_ANGLE;
 			mFinderTypeSpinner.setSelection(0);
+
+			mOptions.outFinderPatternColor = QRCodeOptions.COLOR_UNSET;
+			mOptions.outFinderBorderColor = QRCodeOptions.COLOR_UNSET;
+			mOptions.outFinderPointColor = QRCodeOptions.COLOR_UNSET;
 			postChange();
 			break;
 		case R.id.border_reset_bt:
 			mBorderType = BORDER_TYPE.NONE;
 			mBorderTypeSpinner.setSelection(0);
+
+			mOptions.outBorderType = null;
 			postChange();
 			break;
 		default:
@@ -491,27 +577,30 @@ public class QrcodeActivity extends Activity implements
 			@Override
 			public void run() {
 				try {
-					int progress = mShapeBar.getProgress();
-					Shape shape = Shape.NORMAL;
-					ErrorCorrectionLevel level = QrcodeActivity.this
-							.getEcLevel();
-					if (progress < SEEKBAR_MAX / 2) {
-						shape = Shape.WATER;
-					} else if (progress > SEEKBAR_MAX / 2) {
-						shape = Shape.ROUND;
-					}
-					float radiusPercent = Math.abs(SEEKBAR_MAX - progress * 2)
-							/ (float) SEEKBAR_MAX;
-					if (shape == Shape.WATER) {
-						// 液化半径上限为0.7
-						radiusPercent *= 0.7;
-					}
-					final Bitmap bitmap = QrcodeUtil.encode(mContent,
-							width * 3 / 5, width * 3 / 5, -1, shape,
-							radiusPercent, level, mForegroundColor,
-							mBackgroundColor, mBackgroundBm, mFinderColor,
-							mFinderBorderColor, mFinderType, mGradientColor,
-							mGadientType, mBorderType);
+					// int progress = mShapeBar.getProgress();
+					// Shape shape = Shape.NORMAL;
+					// ErrorCorrectionLevel level = QrcodeActivity.this
+					// .getEcLevel();
+					// if (progress < SEEKBAR_MAX / 2) {
+					// shape = Shape.WATER;
+					// } else if (progress > SEEKBAR_MAX / 2) {
+					// shape = Shape.ROUND;
+					// }
+					// float radiusPercent = Math.abs(SEEKBAR_MAX - progress *
+					// 2)
+					// / (float) SEEKBAR_MAX;
+					// if (shape == Shape.WATER) {
+					// // 液化半径上限为0.7
+					// radiusPercent *= 0.7;
+					// }
+					// Bitmap bitmap = QrcodeUtil.encode(mContent, width * 4 /
+					// 5,
+					// width * 4 / 5, -1, shape, radiusPercent, level,
+					// mForegroundColor, mBackgroundColor, mBackgroundBm,
+					// mFinderColor, mFinderBorderColor, mFinderType,
+					// mGradientColor, mGadientType, mBorderType);
+
+					final Bitmap bitmap = mQRCodeGenerator.generate(mOptions);
 					mHandler.post(new Runnable() {
 						@Override
 						public void run() {
@@ -558,22 +647,32 @@ public class QrcodeActivity extends Activity implements
 		case COLOR_TYPE_FOREGROUND:
 			mForegroundColor = color;
 			mForegroundColorChooseBt.setBackgroundColor(color);
+
+			mOptions.outForegroundColor = color;
 			break;
 		case COLOR_TYPE_BACKGROUND:
 			mBackgroundColor = color;
 			mBackgroundColorChooseBt.setBackgroundColor(color);
+
+			mOptions.outBackgroundColor = color;
 			break;
 		case COLOR_TYPE_GRADIENT:
 			mGradientColor = color;
 			mGradientColorChooseBt.setBackgroundColor(color);
+
+			mOptions.outGradientColor = color;
 			break;
 		case COLOR_TYPE_FINDER:
 			mFinderColor = color;
 			mFinderColorChooseBt.setBackgroundColor(color);
+
+			mOptions.outFinderPatternColor = color;
 			break;
 		case COLOR_TYPE_FINDER_BORDER:
 			mFinderBorderColor = color;
 			mFinderBorderColorChooseBt.setBackgroundColor(color);
+
+			mOptions.outFinderBorderColor = color;
 			break;
 		default:
 			break;
@@ -713,6 +812,10 @@ public class QrcodeActivity extends Activity implements
 					mQrcodeImageView.getWidth());
 			options.inJustDecodeBounds = false;
 			mBackgroundBm = BitmapFactory.decodeFile(picturePath, options);
+
+			mOptions.outBackgroundImage = mBackgroundBm;
+			((ImageButton) mBackgroundImageChooseBt)
+					.setImageBitmap(mBackgroundBm);
 			postChange();
 		}
 	}

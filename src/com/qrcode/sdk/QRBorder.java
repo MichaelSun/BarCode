@@ -1,20 +1,17 @@
-package com.qrcode.sdk.demo;
+package com.qrcode.sdk;
 
 import android.graphics.Path;
 import android.graphics.RectF;
 
-public abstract class Border {
+public abstract class QRBorder {
 
 	protected int mWidth = 0;
 
 	protected int mHeight = 0;
-	
-	protected int mPadding = 0;
 
-	public Border(int width, int height, int padding) {
+	public QRBorder(int width, int height) {
 		mWidth = width;
 		mHeight = height;
-		mPadding = padding;
 	}
 
 	public int getWidth() {
@@ -25,8 +22,8 @@ public abstract class Border {
 		return mHeight;
 	}
 
-	protected abstract RectF getInsideArea();
+	public abstract RectF getInsideArea();
 
-	protected abstract Path getClipPath();
+	public abstract Path getClipPath();
 
 }

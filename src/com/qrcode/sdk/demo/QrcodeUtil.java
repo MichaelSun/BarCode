@@ -32,6 +32,9 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.google.zxing.qrcode.encoder.ByteMatrix;
 import com.google.zxing.qrcode.encoder.Encoder;
 import com.google.zxing.qrcode.encoder.QRCode;
+import com.qrcode.sdk.QRBorder;
+import com.qrcode.sdk.QRCircleBorder;
+import com.qrcode.sdk.QRRhombusBorder;
 
 public class QrcodeUtil {
 
@@ -108,11 +111,11 @@ public class QrcodeUtil {
 
 		int padding = quietZone;
 
-		Border border = null;
+		QRBorder border = null;
 		if (borderType == BORDER_TYPE.RHOMBUS) {
-			border = new RhombusBorder(outputWidth, outputHeight, padding);
+			border = new QRRhombusBorder(outputWidth, outputHeight);
 		} else if (borderType == BORDER_TYPE.CIRCLE) {
-			border = new CircleBorder(outputWidth, outputHeight, padding);
+			border = new QRCircleBorder(outputWidth, outputHeight);
 		}
 
 		RectF insideRect = null;
