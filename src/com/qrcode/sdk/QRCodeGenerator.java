@@ -5,10 +5,10 @@ import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.Paint.Style;
 import android.graphics.Path;
 import android.graphics.Path.Direction;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.text.TextUtils;
 
@@ -55,10 +55,13 @@ public class QRCodeGenerator {
 		}
 
 		int x, y = 0;
-		if (row < 0 || row > matrix.getWidth() - 1 || column < 0
+		if (row < 0 || column < 0) {
+			x = (row + 1 + matrix.getWidth()) % matrix.getWidth();
+			y = (column + 1 + matrix.getHeight()) % matrix.getHeight();
+		} else if (row > matrix.getWidth() - 1
 				|| column > matrix.getHeight() - 1) {
-			x = (row + matrix.getWidth()) % matrix.getWidth();
-			y = (column + matrix.getHeight()) % matrix.getHeight();
+			x = (row - 1 + matrix.getWidth()) % matrix.getWidth();
+			y = (column - 1 + matrix.getHeight()) % matrix.getHeight();
 		} else {
 			x = row % matrix.getWidth();
 			y = column % matrix.getHeight();
@@ -280,6 +283,7 @@ public class QRCodeGenerator {
 		return topBitmap;
 	}
 
+	// 用浮点数来计算的话会出现各种异常的bug，效率也会有影响，这里全部使用整型来重新计算
 	public Bitmap generate(QRCodeOptions options) throws WriterException {
 		if (options == null) {
 			options = new QRCodeOptions();
@@ -303,20 +307,16 @@ public class QRCodeGenerator {
 		if (input == null) {
 			throw new IllegalStateException();
 		}
-		int inputWidth = input.getWidth();
-		int inputHeight = input.getHeight();
-		int qrWidth = options.outBorderType != null ? inputWidth : inputWidth
-				+ (options.outPadding << 1);
-		int qrHeight = options.outBorderType != null ? inputHeight
-				: inputHeight + (options.outPadding << 1);
+		int qrDimension = input.getWidth();
+		int qrRealDimension = options.outBorderType != null ? qrDimension
+				: qrDimension + (options.outPadding << 1);
 
-		int outputWidth = Math.max(width, qrWidth);
-		int outputHeight = Math.max(height, qrHeight);
+		int outputWidth = Math.max(width, qrRealDimension);
+		int outputHeight = Math.max(height, qrRealDimension);
 
-		float multiple = Math.min(outputWidth / (float) qrWidth, outputHeight
-				/ (float) qrHeight);
-		float leftPadding = (outputWidth - inputWidth * multiple) / 2;
-		float topPadding = (outputHeight - inputHeight * multiple) / 2;
+		int boxSize = Math.min(outputWidth, outputHeight) / qrRealDimension;
+		int leftPadding = (outputWidth - qrDimension * boxSize) >> 1;
+		int topPadding = (outputHeight - qrDimension * boxSize) >> 1;
 
 		Bitmap bitmap = Bitmap.createBitmap(outputWidth, outputHeight,
 				Config.ARGB_8888);
@@ -330,35 +330,34 @@ public class QRCodeGenerator {
 		}
 
 		QRBorder border = null;
-		RectF insideRect = null;
-
 		if (options.outBorderType != null) {
 			switch (options.outBorderType) {
 			case ROUND:
-				border = new QRCircleBorder(outputWidth, outputHeight);
+				border = new QRCircleBorder(outputWidth, outputHeight,
+						qrDimension);
 				break;
 			case RHOMBUS:
-				border = new QRRhombusBorder(outputWidth, outputHeight);
+				border = new QRRhombusBorder(outputWidth, outputHeight,
+						qrDimension);
 				break;
 			default:
 				break;
 			}
 		}
 
+		Rect insideRect = null;
 		if (border != null) {
 			canvas.clipPath(border.getClipPath());
 			insideRect = border.getInsideArea();
-			multiple = Math.min((insideRect.right - insideRect.left)
-					/ inputWidth, (insideRect.bottom - insideRect.top)
-					/ inputHeight);
-			leftPadding = 0;
-			topPadding = 0;
+			boxSize = border.getBoxSize();
+			leftPadding = border.getLeftPadding();
+			topPadding = border.getTopPadding();
 		} else {
-			insideRect = new RectF(leftPadding, topPadding, outputWidth
+			insideRect = new Rect(leftPadding, topPadding, outputWidth
 					- leftPadding, outputHeight - topPadding);
 		}
 
-		int roundRectRadius = (int) (multiple * options.outRadiuspercent);
+		int roundRectRadius = (int) (boxSize * options.outRadiuspercent);
 		if (options.outShape == Shape.WATER) {
 			roundRectRadius = (int) (roundRectRadius * 0.7f); // 避免液态太过出现毛刺
 		}
@@ -370,24 +369,28 @@ public class QRCodeGenerator {
 		int foregroundColor = options.outForegroundColor;
 		int gradientColor = options.outGradientColor;
 
-		multiple = ((float) Math.round(multiple * 100)) / 100;
+		topPadding += (((outputHeight - (topPadding << 1)) % boxSize) >> 1);
+		leftPadding += (((outputWidth - (topPadding << 1)) % boxSize) >> 1);
+
 		int inputX, inputY;
-		for (float outputY = topPadding; outputY < outputHeight - topPadding; outputY += multiple) {
-			inputY = Math.round((outputY - insideRect.top) / multiple);
-			for (float outputX = leftPadding; outputX < outputWidth
-					- leftPadding; outputX += multiple) {
-				inputX = Math.round((outputX - insideRect.left) / multiple);
+		for (int outputY = topPadding; outputY < outputHeight - topPadding; outputY += boxSize) {
+			// 总是取ceil值，避免(-1, 1)之间0出现两次
+			inputY = (int) Math.ceil((outputY - insideRect.top)
+					/ (double) boxSize);
+			for (int outputX = leftPadding; outputX < outputWidth - leftPadding; outputX += boxSize) {
+				inputX = (int) Math.ceil((outputX - insideRect.left)
+						/ (double) boxSize);
 
 				if (options.outBackgroundImage != null
 						&& options.outComposeType == ComposeType.ALTERNATIVE) {
 					if (isSet(input, inputX, inputY)) {
 						int offsetX = 0, offsetY = 0;
 						int boxWidth, boxHeight;
-						for (int m = 0; m < multiple / 2 + 1; m++) {
-							boxHeight = (m == 0 || (multiple % 2 == 0 && m == multiple / 2)) ? 1
+						for (int m = 0; m < boxSize / 2 + 1; m++) {
+							boxHeight = (m == 0 || (boxSize % 2 == 0 && m == boxSize / 2)) ? 1
 									: 2;
-							for (int n = 0; n < multiple / 2 + 1; n++) {
-								boxWidth = (n == 0 || (multiple % 2 == 0 && n == multiple / 2)) ? 1
+							for (int n = 0; n < boxSize / 2 + 1; n++) {
+								boxWidth = (n == 0 || (boxSize % 2 == 0 && n == boxSize / 2)) ? 1
 										: 2;
 
 								if (m % 2 == n % 2) {
@@ -395,7 +398,7 @@ public class QRCodeGenerator {
 								} else {
 									paint.setColor(Color.argb(0, 0, 0, 0));
 								}
-								canvas.drawRect(new RectF(outputX + offsetX,
+								canvas.drawRect(new Rect(outputX + offsetX,
 										outputY + offsetY, outputX + offsetX
 												+ boxWidth, outputY + offsetY
 												+ boxHeight), paint);
@@ -408,11 +411,11 @@ public class QRCodeGenerator {
 					} else {
 						int offsetX = 0, offsetY = 0;
 						int boxWidth, boxHeight;
-						for (int m = 0; m < multiple / 2 + 1; m++) {
-							boxHeight = (m == 0 || (multiple % 2 == 0 && m == multiple / 2)) ? 1
+						for (int m = 0; m < boxSize / 2 + 1; m++) {
+							boxHeight = (m == 0 || (boxSize % 2 == 0 && m == boxSize / 2)) ? 1
 									: 2;
-							for (int n = 0; n < multiple / 2 + 1; n++) {
-								boxWidth = (n == 0 || (multiple % 2 == 0 && n == multiple / 2)) ? 1
+							for (int n = 0; n < boxSize / 2 + 1; n++) {
+								boxWidth = (n == 0 || (boxSize % 2 == 0 && n == boxSize / 2)) ? 1
 										: 2;
 
 								if (m % 2 == n % 2) {
@@ -421,7 +424,7 @@ public class QRCodeGenerator {
 								} else {
 									paint.setColor(Color.argb(0, 0, 0, 0));
 								}
-								canvas.drawRect(new RectF(outputX + offsetX,
+								canvas.drawRect(new Rect(outputX + offsetX,
 										outputY + offsetY, outputX + offsetX
 												+ boxWidth, outputY + offsetY
 												+ boxHeight), paint);
@@ -455,25 +458,25 @@ public class QRCodeGenerator {
 						float ratio;
 						switch (options.outGradientType) {
 						case HORIZONTAL:
-							ratio = inputX / (float) inputWidth;
+							ratio = inputX / (float) qrDimension;
 							break;
 						case VERTICAL:
-							ratio = inputY / (float) inputHeight;
+							ratio = inputY / (float) qrDimension;
 							break;
 						case SLASH:
-							ratio = (float) (Math.hypot(inputWidth - inputX,
-									inputHeight - inputY) / Math.hypot(
-									inputWidth, inputHeight));
+							ratio = (float) (Math.hypot(qrDimension - inputX,
+									qrDimension - inputY) / Math.hypot(
+									qrDimension, qrDimension));
 							break;
 						case BACKSLASH:
-							ratio = (float) (Math.hypot(inputX, inputHeight
-									- inputY) / Math.hypot(inputWidth,
-									inputHeight));
+							ratio = (float) (Math.hypot(inputX, qrDimension
+									- inputY) / Math.hypot(qrDimension,
+									qrDimension));
 							break;
 						case ROUND:
-							ratio = (float) (Math.hypot(inputWidth / 2.0
-									- inputX, inputHeight / 2.0 - inputY) / (Math
-									.min(inputWidth, inputHeight) / 2.0));
+							ratio = (float) (Math.hypot(qrDimension / 2.0
+									- inputX, qrDimension / 2.0 - inputY) / (Math
+									.min(qrDimension, qrDimension) / 2.0));
 							break;
 						default:
 							ratio = 0.0f;
@@ -486,17 +489,15 @@ public class QRCodeGenerator {
 
 					Shape shape = options.outShape;
 					if (isSet(input, inputX, inputY)) {
-						if (shape == Shape.ROUND) {
-							// 圆角
+						if (shape == Shape.ROUND) { // 圆角
 							canvas.drawRoundRect(new RectF(outputX, outputY,
-									outputX + multiple, outputY + multiple),
+									outputX + boxSize, outputY + boxSize),
 									roundRectRadius, roundRectRadius, paint);
-						} else if (shape == Shape.WATER) {
-							// 液态
+						} else if (shape == Shape.WATER) { // 液态
 							drawRoundRect(
 									canvas,
 									new RectF(outputX, outputY, outputX
-											+ multiple, outputY + multiple),
+											+ boxSize, outputY + boxSize),
 									paint,
 									roundRectRadius,
 									isSet(input, inputX - 1, inputY - 1)
@@ -514,15 +515,14 @@ public class QRCodeGenerator {
 											|| isSet(input, inputX + 1,
 													inputY + 1)
 											|| isSet(input, inputX, inputY + 1));
-						} else {
-							// 正常
-							canvas.drawRect(outputX, outputY, outputX
-									+ multiple, outputY + multiple, paint);
+						} else { // 正常
+							canvas.drawRect(outputX, outputY,
+									outputX + boxSize, outputY + boxSize, paint);
 						}
 					} else {
 						if (shape == Shape.WATER) {
 							RectF rect = new RectF(outputX, outputY, outputX
-									+ multiple, outputY + multiple);
+									+ boxSize, outputY + boxSize);
 							if (isSet(input, inputX, inputY - 1)
 									&& isSet(input, inputX - 1, inputY)) {
 								drawAntiRoundRect(canvas, paint,

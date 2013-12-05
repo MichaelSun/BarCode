@@ -113,16 +113,16 @@ public class QrcodeUtil {
 
 		QRBorder border = null;
 		if (borderType == BORDER_TYPE.RHOMBUS) {
-			border = new QRRhombusBorder(outputWidth, outputHeight);
+			border = new QRRhombusBorder(outputWidth, outputHeight, inputWidth);
 		} else if (borderType == BORDER_TYPE.CIRCLE) {
-			border = new QRCircleBorder(outputWidth, outputHeight);
+			border = new QRCircleBorder(outputWidth, outputHeight, inputWidth);
 		}
 
 		RectF insideRect = null;
 		if (border != null) {
 			Path path = border.getClipPath();
 			canvas.clipPath(path);
-			insideRect = border.getInsideArea();
+			insideRect = new RectF(border.getInsideArea());
 		} else {
 			insideRect = new RectF(padding, padding, outputWidth - padding,
 					outputHeight - padding);

@@ -2,32 +2,35 @@ package com.qrcode.sdk;
 
 import android.graphics.Path;
 import android.graphics.Path.Direction;
-import android.graphics.RectF;
+import android.graphics.Rect;
 
 public class QRCircleBorder extends QRBorder {
 
-	private float mDiameter;
+	private int mDiameter;
 
-	private RectF mInsideRect;
-
-	public QRCircleBorder(int width, int height) {
+	public QRCircleBorder(int width, int height, int qrDimension) {
 		super(width, height);
-		mDiameter = width < height ? width : height;
-		float insideW = (float) (mDiameter * Math.sqrt(2) / 2);
-		mInsideRect = new RectF(mWidth / 2.0f - insideW / 2, mHeight / 2.0f
-				- insideW / 2, mWidth / 2.0f + insideW / 2, mHeight / 2.0f
-				+ insideW / 2);
-	}
+		mDiameter = Math.min(width, height);
 
-	@Override
-	public RectF getInsideArea() {
-		return mInsideRect;
+		int insideWidth = (int) (mDiameter * Math.sqrt(2.0) / 2);
+		mBoxSize = insideWidth / qrDimension;
+		int padding = (insideWidth % qrDimension) >> 1;
+		int diameterPadding = (int) (Math.sqrt(2.0) * padding);
+		mDiameter -= (diameterPadding << 1);
+
+		mLeftPadding = (width - mDiameter) >> 1;
+		mTopPadding = (height - mDiameter) >> 1;
+
+		mInsideRect = new Rect((width >> 1) - (insideWidth >> 1) + padding,
+				(height >> 1) - (insideWidth >> 1) + padding, (width >> 1)
+						+ (insideWidth >> 1) - padding, (height >> 1)
+						+ (insideWidth >> 1) - padding);
 	}
 
 	@Override
 	public Path getClipPath() {
 		Path path = new Path();
-		path.addCircle(mWidth / 2.0f, mHeight / 2.0f, mDiameter / 2,
+		path.addCircle(mWidth / 2.0f, mHeight / 2.0f, mDiameter / 2.0f,
 				Direction.CCW);
 		return path;
 	}
