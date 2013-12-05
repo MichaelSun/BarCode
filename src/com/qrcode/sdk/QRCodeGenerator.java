@@ -11,6 +11,7 @@ import android.graphics.Path;
 import android.graphics.Path.Direction;
 import android.graphics.RectF;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.zxing.WriterException;
 import com.google.zxing.qrcode.encoder.ByteMatrix;
@@ -370,6 +371,7 @@ public class QRCodeGenerator {
 		int foregroundColor = options.outForegroundColor;
 		int gradientColor = options.outGradientColor;
 
+		multiple = ((float) Math.round(multiple * 100)) / 100;
 		int inputX, inputY;
 		for (float outputY = topPadding; outputY < outputHeight - topPadding; outputY += multiple) {
 			inputY = Math.round((outputY - insideRect.top) / multiple);

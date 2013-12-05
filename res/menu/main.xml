@@ -8,13 +8,13 @@
     <item
         android:id="@+id/action_level"
         android:orderInCategory="100"
-        android:showAsAction="ifRoom"
+        android:showAsAction="never"
         android:title="容错率"/>
     <item
         android:id="@+id/action_color"
         android:orderInCategory="100"
         android:showAsAction="ifRoom"
-        android:title="颜色"/>
+        android:title="前景背景"/>
     <item
         android:id="@+id/action_gradient"
         android:orderInCategory="100"
